@@ -1,0 +1,81 @@
+@import (reference) '~app/less/variables';
+@import (reference) '~app/less/mixins/importAll';
+@import (reference) '~app/less/themes/themeify';
+@import '~app/less/components/aspect-ratio';
+
+.HTML5StreamPlayer {
+
+  &__video {
+    width: 100%;
+    max-width: 100%;
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  &__videoContainer {
+    position: absolute
+    background: yellow;
+    border: solid 1px red;
+    width: 100%;
+    text-align: center;
+    display: block;
+  }
+
+  &__videoContainer:before {
+      content: "";
+      width: 1px;
+      max-height: 40%;
+      display: inline-block;
+      vertical-align: middle;
+      margin-left: -1px;
+  }
+
+  &__control {
+    height: 55px;
+  }
+
+  &__playback-action-circle {
+    opacity: 0.6;
+    background-color: @white;
+
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    text-align: center;
+
+    &:hover {
+      opacity: 0.8;
+      background-color: @off-white;
+    }
+
+    .icon-size(@icon-size) {
+      width: @icon-size;
+      height: @icon-size;
+
+      @half-icon-size: floor(@icon-size / 2);
+      border-radius: @half-icon-size;
+      margin-top: -@half-icon-size;
+      margin-left: -@half-icon-size;
+
+      .icon-font({
+        font-size: @half-icon-size;
+        line-height: @icon-size; // vertical alignment
+      });
+    }
+
+    &.regular {
+      .icon-size(48px);
+    }
+
+    &.compact {
+      .icon-size(28px);
+    }
+  }
+
+  &__playback-action-icon {
+    // some of the icons are a little off center...
+    &.icon-play_triangle {
+      margin-left: 0.3em;
+    }
+  }
+}

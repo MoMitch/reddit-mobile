@@ -90,8 +90,8 @@ export default function PostContent(props) {
 
   return (
     <div
-       className={ `PostContent ${isThumbnail ? 'size-compact' : 'size-default'}` }
-       onClick={ e => interceptListingClick(e, LISTING_CLICK_TYPES.CONTENT) }
+      className={ `PostContent ${isThumbnail ? 'size-compact' : 'size-default'}` }
+      onClick={ e => interceptListingClick(e, LISTING_CLICK_TYPES.CONTENT) }
     >
       { renderMediaContent(mediaContentNode, isThumbnail, isDomainExternal,
                            cleanPostDomain(post.domain), linkUrl,

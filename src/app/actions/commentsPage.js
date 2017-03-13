@@ -55,7 +55,7 @@ export const visitedCommentsPage = (postId) => ({
 export const fetchCommentsPage = commentsPageParams => async (dispatch, getState) => {
   const state = getState();
   const commentsPageId = paramsToCommentsPageId(commentsPageParams);
-  const commentsPage = state.commentsPages[commentsPageId];
+  const commentsPage = state.commentsPages.api[commentsPageId];
 
   if (commentsPage) { return; }
 
@@ -69,11 +69,7 @@ export const fetchCommentsPage = commentsPageParams => async (dispatch, getState
     const apiResponse = await CommentsEndpoint.get(apiOptions, commentsPageParams);
     dispatch(received(commentsPageId, apiResponse));
   } catch (e) {
-    if (e instanceof ResponseError) {
-      dispatch(failed(commentsPageId, e));
-    } else {
-      throw e;
-    }
+    dispatch(failed(commentsPageId, e));
   }
 };
 

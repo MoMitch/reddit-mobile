@@ -2,14 +2,12 @@ import omit from 'lodash/omit';
 import values from 'lodash/values';
 import url from 'url';
 
-import { ADBLOCK_TEST_ID } from 'app/constants';
 import {
   interstitialType,
   isPartOfXPromoExperiment,
   currentExperimentData as currentXPromoExperimentData,
-  xpromoIsEnabledOnPage,
   xpromoIsEnabledOnDevice,
-  xpromoIsPastExperiment,
+  commentsInterstitialEnabled,
   isEligibleListingPage,
   isEligibleCommentsPage,
 } from 'app/selectors/xpromo';
@@ -21,10 +19,10 @@ import {
   buildAdditionalEventData as commentsPageEventData,
 } from 'app/router/handlers/CommentsPage';
 
-import { isHidden } from 'lib/dom';
 import isFakeSubreddit from 'lib/isFakeSubreddit';
 import { getEventTracker } from 'lib/eventTracker';
 import * as gtm from 'lib/gtm';
+import { hasAdblock } from 'lib/adblock';
 import { shouldNotShowBanner } from 'lib/smartBannerState';
 
 export const XPROMO_VIEW = 'cs.xpromo_view';
@@ -61,13 +59,15 @@ export function buildSubredditData(state) {
 
   return {
     sr_id: convertId(subreddit.name),
-    sr_name: subreddit.uuid,
+    sr_name: subreddit.displayName,
   };
 }
 
 export function getListingName(state) {
-  const subredditName = state.platform.currentPage.urlParams.subredditName;
-  return { 'listing_name': subredditName ? subredditName : 'frontpage'};
+  const urlName = state.platform.currentPage.urlParams.subredditName;
+  const subreddit = getSubredditFromState(state);
+  const listingName = subreddit && subreddit.displayName || urlName || 'frontpage';
+  return { 'listing_name': listingName };
   // we don't support multis yet but we will need to update this when we do.
 }
 
@@ -146,7 +146,12 @@ export function trackXPromoEvent(state, eventType, additionalEventData) {
     ...additionalEventData,
   };
 
-  getEventTracker().track('xpromo_events', eventType, payload);
+  return new Promise((resolve) => {
+    getEventTracker()
+      .replaceToNewSend()
+      .addDoneToNewSend(() => resolve())
+      .track('xpromo_events', eventType, payload);
+  });
 }
 
 function getExperimentPayload(state) {
@@ -178,17 +183,18 @@ export function trackPagesXPromoEvents(state, additionalEventData) {
     const ineligibilityReason = shouldNotShowBanner();
     if (ineligibilityReason) {
       trackXPromoIneligibleEvent(state, additionalEventData, ineligibilityReason);
-    } else if (xpromoIsEnabledOnPage(state) && xpromoIsEnabledOnDevice(state)) {
+    } else if (xpromoIsEnabledOnDevice(state)) {
       // listing pages always track view events because they'll either see
       // the normal xpromo, or the login required variant
       trackXPromoView(state, additionalEventData);
     }
   } else if (isEligibleCommentsPage(state)) {
-    // on comments pages, only track the xpromo view if we would show it and
-    // are in the treatement
-    if (xpromoIsEnabledOnPage(state)
-        && xpromoIsEnabledOnDevice(state)
-        && xpromoIsPastExperiment(state)) {
+    const ineligibilityReason = shouldNotShowBanner();
+    if (ineligibilityReason) {
+      trackXPromoIneligibleEvent(state, additionalEventData, ineligibilityReason);
+      // otherwise check if this is a valid page, and the comments page
+      // xpromo is enabled.
+    } else if (xpromoIsEnabledOnDevice(state) && commentsInterstitialEnabled(state)) {
       trackXPromoView(state, additionalEventData);
     }
   }
@@ -282,19 +288,6 @@ const gtmPageView = state => {
     pathname: state.platform.currentPage.url || '/',
     advertiserCategory: subreddit ? subreddit.advertiserCategory : null,
   });
-};
-
-const hasAdblock = () => {
-  const adblockTester = document.getElementById(ADBLOCK_TEST_ID);
-  // If the div has been removed, they have adblock
-  if (!adblockTester) { return true; }
-
-  const rect = adblockTester.getBoundingClientRect();
-  if (!rect || !rect.height || !rect.width) {
-    return true;
-  }
-
-  return isHidden(adblockTester);
 };
 
 // Tracks the active blocking of an ad

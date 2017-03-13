@@ -44,19 +44,41 @@ export const selector = createSelector(
   getDevice,
   scrollPastState,
   (state => xpromoThemeIsUsual(state)),
-  (device, scrollPast, xpromoThemeIsUsualState) => ({ 
+  (device, scrollPast, xpromoThemeIsUsualState) => ({
     device, 
     scrollPast, 
     xpromoThemeIsUsualState,
   }),
 );
 
-const mapDispatchToProps = dispatch => ({
-  navigator: url => (() => {
-    dispatch(logAppStoreNavigation('interstitial_button'));
-    dispatch(promoClicked());
-    dispatch(navigateToAppStore(url));
-  }),
-});
+const mapDispatchToProps = dispatch => {
+  let preventExtraClick = false;
+  return {
+    navigator: (visitTrigger, url) => (async () => {
+      // Prevention of additional click events
+      // while the Promise dispatch is awaiting
+      if (!preventExtraClick) {
+        preventExtraClick = true;
+        await dispatch(logAppStoreNavigation(visitTrigger));
+        dispatch(promoClicked());
+        dispatch(navigateToAppStore(url));
+        preventExtraClick = false;
+      }
+    }),
+  };
+};
 
-export default connect(selector, mapDispatchToProps)(DualPartInterstitial);
+const mergeProps = (stateProps, dispatchProps, ownProps) => {
+  const { xpromoThemeIsUsualState } = stateProps;
+  const { navigator: dispatchNavigator } = dispatchProps;
+  const visitTrigger = xpromoThemeIsUsualState ? 'interstitial_button' : 'banner_button';
+
+  return {
+    ...stateProps,
+    ...dispatchProps,
+    ...ownProps,
+    navigator: url => dispatchNavigator(visitTrigger, url),
+  };
+};
+
+export default connect(selector, mapDispatchToProps, mergeProps)(DualPartInterstitial);

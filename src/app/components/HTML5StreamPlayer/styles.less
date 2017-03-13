@@ -3,40 +3,266 @@
 @import (reference) '~app/less/themes/themeify';
 @import '~app/less/components/aspect-ratio';
 
+
+@track-color: transparent;
+@thumb-color: #0DD3BB;
+
+@thumb-radius: 16px;
+@thumb-height: 16px;
+@thumb-width: 16px;
+@thumb-shadow-size: 1px;
+@thumb-shadow-blur: 1px;
+@thumb-shadow-color: #111;
+@thumb-border-width: 1px;
+@thumb-border-color: white;
+
+@track-width: 85%;
+@track-height: 4px;
+@track-shadow-size: 2px;
+@track-shadow-blur: 2px;
+@track-shadow-color: #222;
+@track-border-width: 1px;
+@track-border-color: black;
+
+@track-radius: 5px;
+@contrast: 5%;
+
+.shadow(@shadow-size,@shadow-blur,@shadow-color) {
+  box-shadow: @shadow-size @shadow-size @shadow-blur @shadow-color, 0px 0px @shadow-size lighten(@shadow-color,5%);
+}
+
+.track() {
+  width: @track-width;
+  height: @track-height;
+  cursor: pointer;
+  animate: 0.2s;
+}
+
+.thumb() {
+  .shadow(@thumb-shadow-size,@thumb-shadow-blur,@thumb-shadow-color);
+  border: @thumb-border-width solid @thumb-border-color;
+  height: @thumb-height;
+  width: @thumb-width;
+  border-radius: @thumb-radius;
+  background: @thumb-color;
+  cursor: pointer;
+  z-index: 999;
+}
+
 .HTML5StreamPlayer {
 
   &__video {
     width: 100%;
-    max-width: 100%;
-    display: inline-block;
-    vertical-align: middle;
+    height: 100%;
+    position: absolute;
+    top: 0; 
   }
+
+  &__video__regular {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0; 
+  }
+
+  &__video__regular::-webkit-media-controls-play-button {
+    display: none;
+  }
+
+  &__video__regular::-webkit-media-controls-start-playback-button {
+    display: none!important;
+    -webkit-appearance: none;
+  }
+
 
   &__videoContainer {
-    position: absolute
-    background: yellow;
-    border: solid 1px red;
-    width: 100%;
-    text-align: center;
-    display: block;
+    position: relative;
+    max-width: 100%;
+    max-height: 40%;
+    background-color: black;
   }
 
-  &__videoContainer:before {
-      content: "";
-      width: 1px;
-      max-height: 40%;
-      display: inline-block;
-      vertical-align: middle;
-      margin-left: -1px;
+  &__videoTrim{
+    max-height: 40%;
+  }
+
+  &__videoTrim:before {
+    z-index: -999;
+    pointer-events: none;
+  }
+
+  &__controlPanel {
+    position: absolute;
+    top: 0;
+    color: green;
+    width: 100%;
+    height: 100%;
   }
 
   &__control {
-    height: 55px;
+    position: relative;
+
+
+    &__play {
+      outline: none;
+      height: 100%;
+      width:100%;
+    }
+
+    &__play:hover .HTML5StreamPlayer__playback-action-circle{
+      opacity: 0.8;
+      background-color: #0DD3BB;
+    }
+
+    &__bar {
+      justify-content: center;
+      margin-left: 10px;
+      margin-right: 10px;
+      position: absolute;
+      height: 25px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+    }
+
+    &__fullscreen {
+      float: right;
+      height: 25px;
+      width: 25px;
+    }
+
+    &__mute {
+      float: left;
+      height: 25px;
+      width: 25px;
+    }
+
+    &__scrubberContainer {
+      position: relative;
+      justify-content: center;
+      align-items: center;
+      height: 25px;
+      width: auto;
+      margin-left: 35px;
+      margin-right: 35px;
+    }
+
+    &__scrubBar {
+      height: @track-height;
+      background-color: 'transparent' ;
+      border-radius: 100px;
+      margin-left: 7.5%;
+      margin-right: 7.5%;
+    }
+
+    &__scrubBar__buffer {
+      border-radius: 100px;
+      width: @track-width;
+      height: @track-height;
+      background-color: @track-color ;
+      margin-left: 7.5%;
+      margin-right: 7.5%;
+      pointer-events: none;
+      position:absolute; top:0; left:0; z-index:0;
+    }
+
+    &__scrubBar {
+      position: absolute;
+      -webkit-appearance: none;
+      width: @track-width;
+
+      &:focus {
+        outline: none;
+      }
+
+      &::-webkit-slider-runnable-track {
+        .track();
+        .shadow(@track-shadow-size,@track-shadow-blur,@track-shadow-color);
+        background: @track-color;
+        border-radius: @track-radius;
+        /*border: @track-border-width solid @track-border-color;*/
+      }
+      
+      &::-webkit-slider-thumb {
+        .thumb();
+        -webkit-appearance: none;
+        margin-top: ((-@track-border-width * 2 + @track-height) / 2) - (@thumb-height / 2);
+      }
+
+      &:focus::-webkit-slider-runnable-track {
+        background: lighten(@track-color, @contrast);
+      }
+
+      &::-moz-range-track {
+        .track();
+        .shadow(@track-shadow-size,@track-shadow-blur,@track-shadow-color);
+        background: @track-color;
+        border-radius: @track-radius;
+         border: @track-border-width solid @track-border-color;
+      }
+      &::-moz-range-thumb {
+         .thumb();
+      }
+
+      &::-ms-track {
+        .track(); 
+        background: transparent;
+        border-color: transparent;
+        border-width: @thumb-width 0;
+        color: transparent;
+      }
+
+      &::-ms-fill-lower {
+        background: darken(@track-color, @contrast);
+        border: @track-border-width solid @track-border-color;
+        border-radius: @track-radius*2;
+        .shadow(@track-shadow-size,@track-shadow-blur,@track-shadow-color);
+      }
+      &::-ms-fill-upper {
+        background: @track-color;
+        border: @track-border-width solid @track-border-color;
+        border-radius: @track-radius*2;
+        .shadow(@track-shadow-size,@track-shadow-blur,@track-shadow-color);
+      }
+      &::-ms-thumb {
+        .thumb();
+      }
+      &:focus::-ms-fill-lower {
+        background: @track-color;
+      }
+      &:focus::-ms-fill-upper {
+        background: lighten(@track-color, @contrast);
+      }
+    }
+  
   }
 
+  &__playback-full-screen {
+    outline: none;
+    &.icon-full-screen {
+      color: #0DD3BB;
+    }
+  }
+
+  &__playback-mute {
+    outline: none;
+    &.icon-mute {
+      color: #0DD3BB;
+    }
+  }
+
+
+  &__playback-un-mute {
+    outline: none;
+    &.icon-un-mute {
+      color: #0DD3BB;
+    }
+  }
+
+
   &__playback-action-circle {
-    opacity: 0.6;
-    background-color: @white;
+    opacity: 0.9;
+    background-color: #0DD3BB;
 
     position: absolute;
     top: 50%;
@@ -45,7 +271,7 @@
 
     &:hover {
       opacity: 0.8;
-      background-color: @off-white;
+      background-color: #0DD3BB;
     }
 
     .icon-size(@icon-size) {
@@ -76,6 +302,13 @@
     // some of the icons are a little off center...
     &.icon-play_triangle {
       margin-left: 0.3em;
+    }
+  }
+
+  &__playback-action-icon {
+    // some of the icons are a little off center...
+    &.icon-replay {
+      //nothing to add
     }
   }
 }

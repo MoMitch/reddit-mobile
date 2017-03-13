@@ -378,19 +378,22 @@ function renderIframe(src, aspectRatio) {
 }
 
 function renderVideo(videoSpec, posterImage, aspectRatio) {
-  console.log("TEST");
-  if (document.createElement('video').canPlayType('application/vnd.apple.mpegURL') !== '') {
-    return(
 
-        <HTML5StreamPlayer manifestSource = 'http://www.streambox.fr/playlists/x36xhzz/x36xhzz.m3u8'/>
+  //run test HTML5 video
+  let runHTML5test = false;
 
-    );
-  } else {
-    return(
-      
-        <HTML5StreamPlayer manifestSource = 'http://yt-dash-mse-test.commondatastorage.googleapis.com/media/car-20120827-manifest.mpd'/>
-
-    );
+  if (runHTML5test) {
+    if (document.createElement('video').canPlayType('application/vnd.apple.mpegURL') !== '') {
+      let tempAspectRatio = getAspectRatio(false, 1710, 964);
+      return(
+        <HTML5StreamPlayer aspectRatioClassname = {aspectRatioClass(tempAspectRatio)} manifestSource = 'http://www.streambox.fr/playlists/x36xhzz/x36xhzz.m3u8'/>
+      );
+    } else {
+      let tempAspectRatio = getAspectRatio(false, 501, 284);
+      return(
+        <HTML5StreamPlayer aspectRatioClassname = {aspectRatioClass(tempAspectRatio)} manifestSource = 'http://yt-dash-mse-test.commondatastorage.googleapis.com/media/car-20120827-manifest.mpd'/>
+      );
+    }
   }
 
   return (

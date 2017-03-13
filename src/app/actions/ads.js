@@ -6,6 +6,7 @@ import { rawSend } from 'apiClient/apiBase/APIRequestUtils';
 import ResponseError from 'apiClient/errors/ResponseError';
 
 import config from 'config';
+import { hasAdblock } from 'lib/adblock';
 import { apiOptionsFromState } from 'lib/apiOptionsFromState';
 import isFakeSubreddit from 'lib/isFakeSubreddit';
 import adLocationForPostRecords from 'lib/adLocationForPostRecords';
@@ -91,6 +92,11 @@ const nextAdId = () => (uniqueId('ad_'));
 // is more explicit and safer if the page were to change while we await.
 export const fetchNewAdForPostsList = (postsListId, pageParams) =>
   async (dispatch, getState) => {
+    // don't render ads for SEO crawlers
+    if (process.env.ENV !== 'client') {
+      return;
+    }
+
     const state = getState();
     const adRequest = state.adRequests[postsListId];
     if (adRequest && adRequest.loading) { return; }
@@ -121,7 +127,7 @@ export const fetchNewAdForPostsList = (postsListId, pageParams) =>
     await fetchAddBasedOnResults(dispatch, loadedState, adId, postsList, pageParams);
   };
 
-export const fetchSpecificAd = async (dispatch, state, adId, specificAd) => {
+const fetchSpecificAd = async (dispatch, state, adId, specificAd) => {
   try {
     const byIdRequest = PostsEndpoint.get(apiOptionsFromState(state), { id: specificAd });
     const ad = byIdRequest.getModelFromRecord(byIdRequest.results[0]);
@@ -135,7 +141,7 @@ export const fetchSpecificAd = async (dispatch, state, adId, specificAd) => {
   }
 };
 
-export const fetchAddBasedOnResults = async (dispatch, state, adId, postsList, pageParams) => {
+const fetchAddBasedOnResults = async (dispatch, state, adId, postsList, pageParams) => {
   // I don't know what dt stands for but its the thingId's of all the posts
   // on the page.
   const dt = postsList.results.map(record => record.uuid);
@@ -144,6 +150,7 @@ export const fetchAddBasedOnResults = async (dispatch, state, adId, postsList, p
 
   const data = {
     site,
+    adblock: hasAdblock(),
     dt: dt.join(','),
     platform: 'mobile_web',
     placement: `feed-${placementIndex}`,

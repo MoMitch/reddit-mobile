@@ -72,8 +72,50 @@ createTest({ reducers: { smartBanner }, routes }, ({ getStore, expect }) => {
       });
     });
 
+    describe('CAN_LISTING_CLICK', () => {
+      it('should change `canListingClick` to be true', () => {
+        const { store } = getStore({ smartBanner: DEFAULT });
+        store.dispatch(xpromoActions.canListingClick());
+        const { smartBanner } = store.getState();
+        expect(smartBanner.canListingClick).to.eql(true);
+      });
+    });
+
+    describe('MARK_LISTING_CLICK_TIMESTAMP', () => {
+      it('should change `canListingClick` to be false', () => {
+        const { store } = getStore({ smartBanner: {
+          ...DEFAULT,
+          canListingClick: true,
+        }});
+        store.dispatch({ type: xpromoActions.MARK_LISTING_CLICK_TIMESTAMP });
+        const { smartBanner } = store.getState();
+        expect(smartBanner.canListingClick).to.eql(false);
+      });
+    });
+
+    describe('XPROMO_LISTING_CLICKED', () => {
+      it('should change `showingListingClickInterstitial` to true', () => {
+        const { store } = getStore({ smartBanner: DEFAULT });
+        store.dispatch(xpromoActions.promoListingClicked());
+        const { smartBanner } = store.getState();
+        expect(smartBanner.showingListingClickInterstitial).to.eql(true);
+      });
+    });
+
+    describe('XPROMO_HIDE_LISTING_CLICK_INTERSTITIAL', () => {
+      it('should change `showingListingClickInterstitial` to be false', () => {
+        const { store } = getStore({ smartBanner: {
+          ...DEFAULT,
+          showingListingClickInterstitial: true,
+        }});
+        store.dispatch({ type: xpromoActions.XPROMO_HIDE_LISTING_CLICK_INTERSTITIAL });
+        const { smartBanner } = store.getState();
+        expect(smartBanner.showingListingClickInterstitial).to.eql(false);
+      });
+    });
+
     describe('PLATFORM__NAVIGATE_TO_URL', () => {
-      it('should remove desire to show xpromo if we have already shown it once', () => {
+      it('should not remove desire to show xpromo if we have already shown it once and navigate to another app url', () => {
         const { store } = getStore({ smartBanner: DEFAULT });
 
         // Indicate desire to show, record that we showed, navigate.
@@ -82,7 +124,7 @@ createTest({ reducers: { smartBanner }, routes }, ({ getStore, expect }) => {
         store.dispatch(platformActions.navigateToUrl(METHODS.GET, '/user/foobar'));
         const { smartBanner } = store.getState();
         const { showBanner } = smartBanner;
-        expect(showBanner).to.eql(false);
+        expect(showBanner).to.eql(true);
       });
 
       it('should not remove desire to show xpromo if we have not shown it yet', () => {

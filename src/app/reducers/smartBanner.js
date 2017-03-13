@@ -1,12 +1,13 @@
 import merge from 'platform/merge';
 
-import * as platformActions from 'platform/actions';
 import * as xpromoActions from 'app/actions/xpromo';
 import * as loginActions from 'app/actions/login';
 import { markBannerClosed } from 'lib/smartBannerState';
 
 export const DEFAULT = {
   showBanner: false,
+  canListingClick: false,
+  showingListingClickInterstitial: false,
   haveShownXPromo: false,
   xPromoShownUrl: null,
   loginRequired: false,
@@ -65,14 +66,28 @@ export default function(state=DEFAULT, action={}) {
       });
     }
 
-    case platformActions.NAVIGATE_TO_URL: {
-      if (state.haveShownXPromo && !state.loginRequired) {
-        markBannerClosed();
-        return merge(state, {
-          showBanner: false,
-        });
-      }
-      return state;
+    case xpromoActions.CAN_LISTING_CLICK: {
+      return merge(state, {
+        canListingClick: true,
+      });
+    }
+
+    case xpromoActions.XPROMO_LISTING_CLICKED: {
+      return merge(state, {
+        showingListingClickInterstitial: true,
+      });
+    }
+
+    case xpromoActions.XPROMO_HIDE_LISTING_CLICK_INTERSTITIAL: {
+      return merge(state, {
+        showingListingClickInterstitial: false,
+      });
+    }
+
+    case xpromoActions.MARK_LISTING_CLICK_TIMESTAMP: {
+      return merge(state, {
+        canListingClick: false,
+      });
     }
 
     case loginActions.LOGGED_IN: {

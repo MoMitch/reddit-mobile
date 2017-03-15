@@ -9,16 +9,15 @@ class HTML5StreamPlayer extends React.Component {
   static propTypes = {
     // ownProps
     manifestSource: T.string.isRequired,
+    manifestType: T.string.isRequired,
     aspectRatioClassname: T.string.isRequired,
   };
 
   constructor(props) {
     super(props);
     this.state = {
-      mediaPlayer: null,
-      inlineVideo: true,
-      videoPaused: true,
-      videoMuted: false,
+      videoPaused: false,
+      videoMuted: true,
       videoPosition: 0,
       videoEnded: false,
       videoFullScreen: false,
@@ -43,9 +42,9 @@ class HTML5StreamPlayer extends React.Component {
 
   componentDidMount() {
     //if non-hls compatible browser, initialize dashjs media player
-    if (!document.createElement('video').canPlayType('application/vnd.apple.mpegURL') !== '') {
+    if (!document.createElement('video').canPlayType('application/dash+xml') !== '') {
+      console.log("INTIALIZING!");
       let player = dashjs.MediaPlayerFactory.create(this.refs['HTML5StreamPlayerVideo']);
-      this.setState({mediaPlayer: player});
     }
     if ('onorientationchange' in window) {
       window.addEventListener("orientationchange", this.handleChange, false);
@@ -54,6 +53,9 @@ class HTML5StreamPlayer extends React.Component {
     document.addEventListener("fullscreenchange", this.handleFullScreenEvent, false);
     document.addEventListener("mozfullscreenchange", this.handleFullScreenEvent, false);
     document.addEventListener("webkitfullscreenchange", this.handleFullScreenEvent, false);
+
+    //draw initial buffer background (null video);
+    this.drawBufferBar();
   }
 
   componentWillUnmount() {
@@ -110,13 +112,22 @@ class HTML5StreamPlayer extends React.Component {
   }
 
   renderPlaybackIcon() {
+    let video = this.refs['HTML5StreamPlayerVideo'];
+
+    let videoState = this.state.videoPaused;
+    //check for video out of sync, this happens when user blocks autoplay videos etc,
+    //will be realigned on next play/pause event
+    if (!video || video.paused && video.paused === !this.state.videoPaused) {
+      videoState = true;
+    }
+
     if (this.state.videoEnded) {
       return (
         <div className={ `HTML5StreamPlayer__playback-action-circle regular` }>
           <span className={ `HTML5StreamPlayer__playback-action-icon white icon icon-replay` } />
         </div>
       );
-    } else if (this.state.videoPaused) {
+    } else if (videoState) {
       return (
         <div className={ `HTML5StreamPlayer__playback-action-circle regular` }>
           <span className={ `HTML5StreamPlayer__playback-action-icon white icon icon-play_triangle` } />
@@ -135,38 +146,41 @@ class HTML5StreamPlayer extends React.Component {
     video.currentTime = (video.duration/100) * value;
   }
 
-  updateTime = () => {
-    //Create buffer bar for data
-    let video = this.refs['HTML5StreamPlayerVideo'];
+  drawBufferBar(video = null) {
     let bufferBar = this.refs['scrubBuffer'];
     let context = bufferBar.getContext('2d');
-
-    var canvas = document.getElementsByTagName('canvas')[0];
-    var ctx = canvas.getContext('2d');
 
     context.fillStyle = '#CCCCCA';
     context.fillRect(0, 0, bufferBar.width, bufferBar.height);
     context.fillStyle = '#939393';
     context.strokeStyle = '#939393';
 
-    var inc = bufferBar.width / video.duration;
+    if (video) {
+      var inc = bufferBar.width / video.duration;
 
-    //draw buffering each update
-    for (var i = 0; i < video.buffered.length; i++) {
-      var startX = video.buffered.start(i) * inc;
-      var endX = video.buffered.end(i) * inc;
-      var width = endX - startX;
+      //draw buffering each update
+      for (var i = 0; i < video.buffered.length; i++) {
+        var startX = video.buffered.start(i) * inc;
+        var endX = video.buffered.end(i) * inc;
+        var width = endX - startX;
 
-      console.log(`start: ${startX} end: ${endX} width: ${width}`);
+        console.log(`start: ${startX} end: ${endX} width: ${width}`);
 
-      context.fillRect(startX, 0, width, bufferBar.height);
-      context.rect(startX, 0, width, bufferBar.height);
-      context.stroke();
+        context.fillRect(startX, 0, width, bufferBar.height);
+        context.rect(startX, 0, width, bufferBar.height);
+        context.stroke();
+      }
+
+      let elapsedTime = video.currentTime / video.duration;
+      context.fillStyle = '#0DD3BB';
+      context.fillRect(0, 0, bufferBar.width * elapsedTime, bufferBar.height);
     }
+  }
 
-    let elapsedTime = video.currentTime / video.duration;
-    context.fillStyle = '#0DD3BB';
-    context.fillRect(0, 0, bufferBar.width * elapsedTime, bufferBar.height);
+  updateTime = () => {
+    //Create buffer bar for data
+    let video = this.refs['HTML5StreamPlayerVideo'];
+    this.drawBufferBar(video);
 
     if (video.currentTime && video.duration) {
       let isVideoEnded = false;
@@ -180,37 +194,18 @@ class HTML5StreamPlayer extends React.Component {
 
   consoleLoggos = () => {
     let video = this.refs['HTML5StreamPlayerVideo'];
-    console.log("Current time: " + video.currentTime);
-    console.log("Duration: " + video.duration);
-    console.log("IsPaused: " + video.paused);
-    console.log("Muted: " + video.muted);
   }
 
   render() {
-    let videoType = null;
-    //if hls compatible browser use standard hls, else, dash
-    if (document.createElement('video').canPlayType('application/vnd.apple.mpegURL') !== '') {
-      videoType = 'application/vnd.apple.mpegURL';
-    } else {
-      videoType = 'application/dash+xml';
-    }
 
     return (
       <div className = 'HTML5StreamPlayer' ref='HTML5StreamPlayerContainer'>
-
         <div className = {`HTML5StreamPlayer__videoContainer`}>
          
-        {/*
           <div className = {`HTML5StreamPlayer__videoTrim ${this.props.aspectRatioClassname}`}>
-            <video preload="metadata" playsInline={true} className = 'HTML5StreamPlayer__video' ref='HTML5StreamPlayerVideo'>
-                <source src={'http://res.cloudinary.com/momomitch/video/upload/v1488910732/IMG_1273_vubyd0.mp4'} type={'video/mp4'}/>
-            </video>
-          </div>
-        */}
-           
-          <div className = {`HTML5StreamPlayer__videoTrim ${this.props.aspectRatioClassname}`}>
-            <video onTimeUpdate={this.updateTime} preload="metadata" playsInline={true} className = {this.state.videoFullScreen ? 'HTML5StreamPlayer__video' : 'HTML5StreamPlayer__video__regular'} ref='HTML5StreamPlayerVideo'>
-               <source src={this.props.manifestSource} type={videoType}/>
+            <video autoPlay={true} muted={this.state.videoMuted} onTimeUpdate={this.updateTime} preload="metadata" playsInline={true} className = {this.state.videoFullScreen ? 'HTML5StreamPlayer__video' : 'HTML5StreamPlayer__video__regular'} ref='HTML5StreamPlayerVideo'>
+              <source src={this.props.mpegDashSource} type={'application/dash+xml'}/>
+              <source src={this.props.hlsSource} type={'vnd.apple.mpegURL'}/>
             </video>
           </div>
           
@@ -223,15 +218,16 @@ class HTML5StreamPlayer extends React.Component {
             </div>
 
             <div className = 'HTML5StreamPlayer__control__bar'>
-              <div className = 'HTML5StreamPlayer__control__mute'>
-                <button onClick={this.muteVideo}>
-                  {this.renderMute()}
-                </button>
-              </div>
-             
+                           
               <div className = 'HTML5StreamPlayer__control__fullscreen'>
                 <button onClick={this.enterFullScreen}>
                   <span className={ `HTML5StreamPlayer__playback-full-screen icon icon-full-screen` } />
+                </button>
+              </div>
+
+              <div className = 'HTML5StreamPlayer__control__mute'>
+                <button onClick={this.muteVideo}>
+                  {this.renderMute()}
                 </button>
               </div>
 
@@ -244,7 +240,6 @@ class HTML5StreamPlayer extends React.Component {
                   type="range"
                   step="any"
                   value = {this.state.videoPosition}
-                  defaultValue = {0}
                   className = "HTML5StreamPlayer__control__scrubBar"
                   onInput={this.setVideoPos}
                   onChange={this.setVideoPos}

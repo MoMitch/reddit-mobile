@@ -16,15 +16,18 @@
 @thumb-border-width: 1px;
 @thumb-border-color: white;
 
-@track-width: 85%;
+//Must be 100% total
+@track-width: 70%;
+@track-margin-width: 15%;
+//-
+@track-button-spacing: 5%;
+
 @track-height: 4px;
 @track-shadow-size: 2px;
 @track-shadow-blur: 2px;
 @track-shadow-color: #222;
-@track-border-width: 1px;
-@track-border-color: black;
 
-@track-radius: 5px;
+@track-radius: 100px;
 @contrast: 5%;
 
 .shadow(@shadow-size,@shadow-blur,@shadow-color) {
@@ -50,12 +53,16 @@
 }
 
 .HTML5StreamPlayer {
+  box-sizing: border-box;
+  height: auto;
+  max-width: 100vw;
 
   &__video {
     width: 100%;
     height: 100%;
     position: absolute;
     top: 0; 
+    -webkit-video-playable-inline: true;
   }
 
   &__video__regular {
@@ -63,6 +70,7 @@
     height: 100%;
     position: absolute;
     top: 0; 
+    -webkit-video-playable-inline: true;
   }
 
   &__video__regular::-webkit-media-controls-play-button {
@@ -78,12 +86,10 @@
   &__videoContainer {
     position: relative;
     max-width: 100%;
-    max-height: 40%;
     background-color: black;
   }
 
   &__videoTrim{
-    max-height: 40%;
   }
 
   &__videoTrim:before {
@@ -94,14 +100,13 @@
   &__controlPanel {
     position: absolute;
     top: 0;
-    color: green;
     width: 100%;
     height: 100%;
   }
 
   &__control {
     position: relative;
-
+    max-width: 100vw;
 
     &__play {
       outline: none;
@@ -115,14 +120,19 @@
     }
 
     &__bar {
-      justify-content: center;
-      margin-left: 10px;
-      margin-right: 10px;
       position: absolute;
-      height: 25px;
+      height: 45px;
       left: 0;
-      right: 0;
       bottom: 0;
+      max-width: 100vw;
+      width: 100vw;
+      padding-top: 20px;
+      padding-left: @track-button-spacing;
+      padding-right: @track-button-spacing;
+      background: -moz-linear-gradient(top, rgba(0,0,0,0) 0%, rgba(0,0,0,0.65) 100%); /* FF3.6-15 */
+      background: -webkit-linear-gradient(top, rgba(0,0,0,0) 0%,rgba(0,0,0,0.65) 100%); /* Chrome10-25,Safari5.1-6 */
+      background: linear-gradient(to bottom, rgba(0,0,0,0) 0%,rgba(0,0,0,0.65) 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+      filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#00000000', endColorstr='#a6000000',GradientType=0 ); /* IE6-9 */
     }
 
     &__fullscreen {
@@ -143,27 +153,29 @@
       align-items: center;
       height: 25px;
       width: auto;
+      margin-top: 8px;
       margin-left: 35px;
       margin-right: 35px;
     }
 
     &__scrubBar {
       height: @track-height;
-      background-color: 'transparent' ;
+      width: @track-width;
       border-radius: 100px;
-      margin-left: 7.5%;
-      margin-right: 7.5%;
+      position:absolute; top:0; left:0;
+      margin-left: @track-margin-width;
+      margin-right: @track-margin-width;
     }
 
     &__scrubBar__buffer {
-      border-radius: 100px;
+      border-radius: @track-radius;
       width: @track-width;
       height: @track-height;
       background-color: @track-color ;
-      margin-left: 7.5%;
-      margin-right: 7.5%;
       pointer-events: none;
       position:absolute; top:0; left:0; z-index:0;
+      margin-left: @track-margin-width;
+      margin-right: @track-margin-width;
     }
 
     &__scrubBar {
@@ -177,16 +189,14 @@
 
       &::-webkit-slider-runnable-track {
         .track();
-        .shadow(@track-shadow-size,@track-shadow-blur,@track-shadow-color);
         background: @track-color;
         border-radius: @track-radius;
-        /*border: @track-border-width solid @track-border-color;*/
       }
       
       &::-webkit-slider-thumb {
         .thumb();
         -webkit-appearance: none;
-        margin-top: ((-@track-border-width * 2 + @track-height) / 2) - (@thumb-height / 2);
+        margin-top: (@track-height / 2) - (@thumb-height / 2);
       }
 
       &:focus::-webkit-slider-runnable-track {
@@ -195,10 +205,8 @@
 
       &::-moz-range-track {
         .track();
-        .shadow(@track-shadow-size,@track-shadow-blur,@track-shadow-color);
         background: @track-color;
         border-radius: @track-radius;
-         border: @track-border-width solid @track-border-color;
       }
       &::-moz-range-thumb {
          .thumb();
@@ -214,15 +222,11 @@
 
       &::-ms-fill-lower {
         background: darken(@track-color, @contrast);
-        border: @track-border-width solid @track-border-color;
         border-radius: @track-radius*2;
-        .shadow(@track-shadow-size,@track-shadow-blur,@track-shadow-color);
       }
       &::-ms-fill-upper {
         background: @track-color;
-        border: @track-border-width solid @track-border-color;
         border-radius: @track-radius*2;
-        .shadow(@track-shadow-size,@track-shadow-blur,@track-shadow-color);
       }
       &::-ms-thumb {
         .thumb();
@@ -233,6 +237,7 @@
       &:focus::-ms-fill-upper {
         background: lighten(@track-color, @contrast);
       }
+
     }
   
   }
@@ -240,6 +245,8 @@
   &__playback-full-screen {
     outline: none;
     &.icon-full-screen {
+      width: 25px;
+      height: 25px;
       color: #0DD3BB;
     }
   }
@@ -247,6 +254,8 @@
   &__playback-mute {
     outline: none;
     &.icon-mute {
+      width: 25px;
+      height: 25px;
       color: #0DD3BB;
     }
   }
@@ -255,6 +264,8 @@
   &__playback-un-mute {
     outline: none;
     &.icon-un-mute {
+      width: 25px;
+      height: 25px;
       color: #0DD3BB;
     }
   }

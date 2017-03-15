@@ -397,21 +397,15 @@ function renderIframe(src, aspectRatio) {
 
 function renderVideo(videoSpec, posterImage, aspectRatio) {
 
-  //run test HTML5 video
-  let runHTML5test = false;
+  //run test HTML5 video - aspect ratio is hardcoded for testing since videos 
+  let runHTML5test = true;
 
   if (runHTML5test) {
-    if (document.createElement('video').canPlayType('application/vnd.apple.mpegURL') !== '') {
-      let tempAspectRatio = getAspectRatio(false, 1710, 964);
-      return(
-        <HTML5StreamPlayer aspectRatioClassname = {aspectRatioClass(tempAspectRatio)} manifestSource = 'http://www.streambox.fr/playlists/x36xhzz/x36xhzz.m3u8'/>
-      );
-    } else {
-      let tempAspectRatio = getAspectRatio(false, 501, 284);
-      return(
-        <HTML5StreamPlayer aspectRatioClassname = {aspectRatioClass(tempAspectRatio)} manifestSource = 'http://yt-dash-mse-test.commondatastorage.googleapis.com/media/car-20120827-manifest.mpd'/>
-      );
-    }
+    //hardcode 16 by 9 for now, once backend is complete video aspect will be based off 
+    let tempAspectRatio = getAspectRatio(false, 16, 9);
+    return(
+      <HTML5StreamPlayer aspectRatioClassname = {aspectRatioClass(tempAspectRatio)} hlsSource = 'http://www.streambox.fr/playlists/x36xhzz/x36xhzz.m3u8' mpegDashSource = 'http://yt-dash-mse-test.commondatastorage.googleapis.com/media/car-20120827-manifest.mpd'/>
+    );
   }
 
   return (

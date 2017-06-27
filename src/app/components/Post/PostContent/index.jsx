@@ -270,7 +270,7 @@ function buildImagePreview(previewImage, imageURL, linkDescriptor, callback,
     }
 
     const html5sources = gifToHTML5Sources(imageURL, previewImage.url);
-    if (html5sources) {
+    if (isPlaying && html5sources) {
       const { width, height } = previewImage;
       const aspectRatio = getAspectRatio(single, width, height);
 

@@ -22,6 +22,7 @@ class HTML5StreamPlayer extends React.Component {
     scrubberThumbSource: T.string.isRequired,
     isGif: T.bool.isRequired,
     isVertical: T.bool.isRequired,
+    kDuration: T.number.isRequired,
   };
 
   constructor(props) {
@@ -67,8 +68,12 @@ class HTML5StreamPlayer extends React.Component {
     return (this.getMobileOperatingSystem() === 'Android');
   }
 
-  videoRound(num){
-    if (isNaN(num)) {
+  safeVideoTime(num){
+    if (isNaN(num)
+      || num === null
+      || num === undefined
+      || num === Number.POSITIVE_INFINITY
+      || num === Number.NEGATIVE_INFINITY) {
       return 0;
     }
     //Mobile html5 video doesn't like seeking to long floating point numbers, we set everything to run off 1 d.p.
@@ -150,15 +155,13 @@ class HTML5StreamPlayer extends React.Component {
         this.setState({
           videoLoaded: true,
           totalServedTime: this.props.postData.videoPlaytime * 1000.0,
-          totalTime: this.secondsToMinutes(this.videoRound(video.duration)),
           videoWasInView: false,
         });
         this.sendTrackVideoEvent(VIDEO_EVENT.CHANGED_PAGETYPE, this.getPercentServed());
-        video.currentTime = this.videoRound(this.props.postData.videoPlaytime);
+        video.currentTime = this.safeVideoTime(this.props.postData.videoPlaytime);
       } else {
         this.setState({
           videoLoaded: true,
-          totalTime: this.secondsToMinutes(this.videoRound(video.duration)),
           videoWasInView: false,
         });
       }
@@ -218,9 +221,15 @@ class HTML5StreamPlayer extends React.Component {
     /*if video has a previous time position, prevent autoplay,
     this stops the video from continuing unintentionally on report modal open/close*/
     if (this.props.postData.videoPlaytime) {
-      this.setState({autoPlay: false});
+      this.setState({
+        autoPlay: false,
+        totalTime: this.secondsToMinutes(this.safeVideoTime(this.props.kDuration)),
+      });
+      return;
     }
-
+    this.setState({
+      totalTime: this.secondsToMinutes(this.safeVideoTime(this.props.kDuration)),
+    });
   }
 
   componentWillUnmount() {
@@ -274,7 +283,7 @@ class HTML5StreamPlayer extends React.Component {
   playPauseVideo = () => {
     const video = this.HTML5StreamPlayerVideo;
     if (this.videoIsPaused()) {
-      if ((this.videoRound(video.currentTime) >= this.videoRound(video.duration) || video.ended)) {
+      if ((this.safeVideoTime(video.currentTime) >= this.safeVideoTime(video.duration) || video.ended)) {
         this.resetVideo();
         this.sendTrackVideoEvent(VIDEO_EVENT.REPLAY);
       } else {
@@ -381,7 +390,7 @@ class HTML5StreamPlayer extends React.Component {
     }
 
     const video = this.HTML5StreamPlayerVideo;
-    if ((this.videoRound(video.currentTime) >= this.videoRound(video.duration) || video.ended)
+    if ((this.safeVideoTime(video.currentTime) >= this.safeVideoTime(video.duration) || video.ended)
       && this.props.isGif === false) {
       return (
         <div className={ 'HTML5StreamPlayer__playback-action-circle regular' }>
@@ -411,13 +420,13 @@ class HTML5StreamPlayer extends React.Component {
     let tapPosition = this.calculateTapPosition(event.touches[0].pageX);
 
     if (video) {
-      video.currentTime = Math.min(this.videoRound(mainVideo.duration) * tapPosition, mainVideo.duration);
+      video.currentTime = Math.min(this.safeVideoTime(mainVideo.duration) * tapPosition, mainVideo.duration);
     }
 
     this.setState({
       scrubPosition: tapPosition,
       thumbPosition: ((bufferBar.clientWidth-16) * tapPosition + 2),
-      currentTime: this.secondsToMinutes(this.videoRound(mainVideo.duration) * tapPosition),
+      currentTime: this.secondsToMinutes(this.safeVideoTime(mainVideo.duration) * tapPosition),
     });
   }
 
@@ -479,8 +488,7 @@ class HTML5StreamPlayer extends React.Component {
 
     if (video.currentTime != null && video.duration != null) {
       this.setState({
-        currentTime: this.secondsToMinutes(this.videoRound(video.currentTime)),
-        totalTime: this.secondsToMinutes(this.videoRound(video.duration)),
+        currentTime: this.secondsToMinutes(this.safeVideoTime(video.currentTime)),
         lastUpdate: performance.now(),
         totalServedTime: newTime,
         wasPlaying: !this.videoIsPaused(),
@@ -519,10 +527,10 @@ class HTML5StreamPlayer extends React.Component {
     const video = this.HTML5StreamPlayerVideo;
     const videoThumb = this.scrubberThumbnail;
     videoThumb.pause();
-    video.currentTime = Math.min(this.videoRound(videoThumb.currentTime), video.duration);
+    video.currentTime = Math.min(this.safeVideoTime(videoThumb.currentTime), video.duration);
 
     if (this.state.scrubPosition == 1.0
-      || (this.state.wasPlaying && (this.videoRound(video.currentTime) < this.videoRound(video.duration)))) {
+      || (this.state.wasPlaying && (this.safeVideoTime(video.currentTime) < this.safeVideoTime(video.duration)))) {
       video.play();
     }
 
@@ -557,14 +565,14 @@ class HTML5StreamPlayer extends React.Component {
     video.pause();
 
     if (videoThumb) {
-      videoThumb.currentTime = this.videoRound(videoThumb.duration) * tapPosition;
+      videoThumb.currentTime = this.safeVideoTime(videoThumb.duration) * tapPosition;
     }
     
     this.setState({
       scrubPosition: tapPosition,
       thumbPosition: ((bufferBar.clientWidth-16) * tapPosition + 2),
       currentlyScrubbing: true,
-      currentTime: this.secondsToMinutes(this.videoRound(video.duration) * tapPosition),
+      currentTime: this.secondsToMinutes(this.safeVideoTime(video.duration) * tapPosition),
     });
   }
 
@@ -574,7 +582,7 @@ class HTML5StreamPlayer extends React.Component {
 
     let videoPos = 0;
     if (bufferBar && this.state.currentlyScrubbing === false && video != null) {
-      videoPos = ((bufferBar.clientWidth - 16.0) * (this.videoRound(video.currentTime)/this.videoRound(video.duration)));
+      videoPos = ((bufferBar.clientWidth - 16.0) * (this.safeVideoTime(video.currentTime)/this.safeVideoTime(video.duration)));
     } else if (bufferBar) {
       videoPos = (this.state.scrubPosition * (bufferBar.clientWidth - 16.0));
     }
@@ -618,8 +626,8 @@ class HTML5StreamPlayer extends React.Component {
               ref={(ref) => this.HTML5StreamPlayerVideo = ref}
               data-dashjs-player
             >
-              <source src={ this.props.mpegDashSource } type={ 'application/dash+xml' }/>
               <source src={ this.props.hlsSource } type={ 'application/vnd.apple.mpegURL' }/>
+              <source src={ this.props.mpegDashSource } type={ 'application/dash+xml' }/>
             </video>
           </div>
           

@@ -68,7 +68,7 @@ class HTML5StreamPlayer extends React.Component {
     return (this.getMobileOperatingSystem() === 'Android');
   }
 
-  safeVideoTime(num){
+  safeVideoTime(num) {
     if (isNaN(num)
       || num === null
       || num === undefined
@@ -189,10 +189,10 @@ class HTML5StreamPlayer extends React.Component {
      
     // Add an event handler for seek events
     if (seekThumb) {
-      seekThumb.addEventListener("touchstart", this.scrubStart, false);
-      seekThumb.addEventListener("touchend", this.scrubEnd, false);
-      seekThumb.addEventListener("touchcancel", this.scrubEnd, false);
-      seekThumb.addEventListener("touchmove", this.setVideoPos, false);
+      seekThumb.addEventListener('touchstart', this.scrubStart, false);
+      seekThumb.addEventListener('touchend', this.scrubEnd, false);
+      seekThumb.addEventListener('touchcancel', this.scrubEnd, false);
+      seekThumb.addEventListener('touchmove', this.setVideoPos, false);
     }
     
 
@@ -246,10 +246,10 @@ class HTML5StreamPlayer extends React.Component {
 
     // Add an event handler for seek events
     if (seekThumb) {
-      seekThumb.removeEventListener("touchstart", this.scrubStart, false);
-      seekThumb.removeEventListener("touchend", this.scrubEnd, false);
-      seekThumb.removeEventListener("touchcancel", this.scrubEnd, false);
-      seekThumb.removeEventListener("touchmove", this.setVideoPos, false);
+      seekThumb.removeEventListener('touchstart', this.scrubStart, false);
+      seekThumb.removeEventListener('touchend', this.scrubEnd, false);
+      seekThumb.removeEventListener('touchcancel', this.scrubEnd, false);
+      seekThumb.removeEventListener('touchmove', this.setVideoPos, false);
     }
 
     document.removeEventListener('webkitfullscreenchange', this.exitHandler, false);
@@ -417,7 +417,7 @@ class HTML5StreamPlayer extends React.Component {
     const mainVideo = this.HTML5StreamPlayerVideo;
     const bufferBar = this.scrubBuffer;
     // const value = event.target.value;
-    let tapPosition = this.calculateTapPosition(event.touches[0].pageX);
+    const tapPosition = this.calculateTapPosition(event.touches[0].pageX);
 
     if (video) {
       video.currentTime = Math.min(this.safeVideoTime(mainVideo.duration) * tapPosition, mainVideo.duration);
@@ -486,7 +486,7 @@ class HTML5StreamPlayer extends React.Component {
       newTime += performance.now() - this.state.lastUpdate;
     }
 
-    if (video.currentTime != null && video.duration != null) {
+    if (video.currentTime !== null && video.duration !== null) {
       this.setState({
         currentTime: this.secondsToMinutes(this.safeVideoTime(video.currentTime)),
         lastUpdate: performance.now(),
@@ -506,7 +506,6 @@ class HTML5StreamPlayer extends React.Component {
         <div
           style = { { left: isNaN(this.state.thumbPosition) ? 0 : this.state.thumbPosition } }
           className = { 'HTML5StreamPlayer__control__scrubThumb' }
-          ref = { 'scrubberThumbnailContainer' }
         >
           <video
             className = { 'HTML5StreamPlayer__control__scrubVideo' }
@@ -514,7 +513,7 @@ class HTML5StreamPlayer extends React.Component {
             autoPlay = { false }
             playsInline = { true }
             muted = { true }
-            ref={(ref) => this.scrubberThumbnail = ref} 
+            ref = { (ref) => { this.scrubberThumbnail = ref; } } 
           >
             <source src={ this.props.scrubberThumbSource } type={ 'video/mp4' }/>
           </video>
@@ -529,7 +528,7 @@ class HTML5StreamPlayer extends React.Component {
     videoThumb.pause();
     video.currentTime = Math.min(this.safeVideoTime(videoThumb.currentTime), video.duration);
 
-    if (this.state.scrubPosition == 1.0
+    if (this.state.scrubPosition === 1.0
       || (this.state.wasPlaying && (this.safeVideoTime(video.currentTime) < this.safeVideoTime(video.duration)))) {
       video.play();
     }
@@ -560,7 +559,7 @@ class HTML5StreamPlayer extends React.Component {
     const bufferBar = this.scrubBuffer;
     const video = this.HTML5StreamPlayerVideo;
 
-    let tapPosition = this.calculateTapPosition(event.touches[0].pageX);
+    const tapPosition = this.calculateTapPosition(event.touches[0].pageX);
 
     video.pause();
 
@@ -581,7 +580,7 @@ class HTML5StreamPlayer extends React.Component {
     const bufferBar = this.scrubBuffer;
 
     let videoPos = 0;
-    if (bufferBar && this.state.currentlyScrubbing === false && video != null) {
+    if (bufferBar && this.state.currentlyScrubbing === false && video !== null) {
       videoPos = ((bufferBar.clientWidth - 16.0) * (this.safeVideoTime(video.currentTime)/this.safeVideoTime(video.duration)));
     } else if (bufferBar) {
       videoPos = (this.state.scrubPosition * (bufferBar.clientWidth - 16.0));
@@ -590,7 +589,7 @@ class HTML5StreamPlayer extends React.Component {
     return (
       <div
         style = { { left: isNaN(videoPos) ? 0 :videoPos } }
-        ref={(ref) => this.seekThumb = ref} 
+        ref = { (ref) => { this.seekThumb = ref; } } 
         className = 'HTML5StreamPlayer__control__seekThumb'
       > 
       </div>
@@ -599,7 +598,7 @@ class HTML5StreamPlayer extends React.Component {
 
   render() {
     return (
-      <div className = { 'HTML5StreamPlayer' }  ref={(ref) => this.HTML5StreamPlayerContainer = ref}>
+      <div className = { 'HTML5StreamPlayer' } ref = { (ref) => { this.HTML5StreamPlayerContainer = ref; } }>
         <div
           className = { this.state.videoFullScreen ?
             'HTML5StreamPlayer__videoContainer__fullscreen'
@@ -623,13 +622,33 @@ class HTML5StreamPlayer extends React.Component {
               className = { this.state.videoFullScreen ?
                 'HTML5StreamPlayer__video__fullscreen'
                 : 'HTML5StreamPlayer__video__regular' }
-              ref={(ref) => this.HTML5StreamPlayerVideo = ref}
+              ref = { (ref) => { this.HTML5StreamPlayerVideo = ref; } }
               data-dashjs-player
             >
               <source src={ this.props.hlsSource } type={ 'application/vnd.apple.mpegURL' }/>
               <source src={ this.props.mpegDashSource } type={ 'application/dash+xml' }/>
             </video>
           </div>
+
+          { (this.state.isLoading === true && this.state.videoLoaded === false) &&
+            <div className="HTML5StreamPlayer__buffering-controls">
+              <div className="centered horizontal">
+                <div className="buffering-indicator active">
+                  <div className="spinner-layer">
+                    <div className="circle-clipper left">
+                      <div className="circle"></div>
+                    </div>
+                    <div className="gap-patch">
+                      <div className="circle"></div>
+                    </div>
+                    <div className="circle-clipper right">
+                      <div className="circle"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
           
           <div className = 'HTML5StreamPlayer__controlPanel' id='html5-video-stream-controls'>
             <div className = 'HTML5StreamPlayer__control__play'>
@@ -681,7 +700,7 @@ class HTML5StreamPlayer extends React.Component {
 
                   <div className = 'HTML5StreamPlayer__control__scrubBar__buffer__container'>
                     <canvas
-                      ref={(ref) => this.scrubBuffer = ref} 
+                      ref = { (ref) => { this.scrubBuffer = ref; } } 
                       className = { 'HTML5StreamPlayer__control__scrubBar__buffer' }
                     >
                     </canvas>
@@ -722,7 +741,7 @@ class HTML5StreamPlayer extends React.Component {
       subredditShortID = subredditShortID.substring(3,(subredditShortID.length - 3));
     }
 
-    let mediaId = postData.cleanUrl.split("/").slice(-1)[0];
+    const mediaId = postData.cleanUrl.split('/').slice(-1)[0];
 
     const payload = {
       video_time: currentTime,

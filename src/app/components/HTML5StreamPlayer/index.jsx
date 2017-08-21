@@ -337,7 +337,7 @@ class HTML5StreamPlayer extends React.Component {
 
   enterFullScreen = () => {
     //Default to standard video controls in fullscreen for iOS
-    let video = this.HTML5StreamPlayerVideo;
+    const video = this.HTML5StreamPlayerVideo;
 
     if (video.requestFullscreen) {
       video.requestFullscreen();

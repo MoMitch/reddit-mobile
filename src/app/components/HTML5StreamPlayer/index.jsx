@@ -426,11 +426,13 @@ class HTML5StreamPlayer extends React.Component {
     const video = this.scrubberThumbnail;
     const mainVideo = this.HTML5StreamPlayerVideo;
     const bufferBar = this.scrubBuffer;
-    // const value = event.target.value;
     const tapPosition = this.calculateTapPosition(event.touches[0].pageX);
 
     if (video) {
-      video.currentTime = Math.min(this.safeVideoTime(mainVideo.duration) * tapPosition, mainVideo.duration);
+      //kDuration is not exact but if the video is not loaded it prevents us from getting errors
+      let duration = mainVideo.duration ? mainVideo.duration : this.props.kDuration;
+      let videoTime = Math.min(this.safeVideoTime(duration * tapPosition), this.props.kDuration);
+      video.currentTime = videoTime;
     }
 
     this.setState({
@@ -536,8 +538,13 @@ class HTML5StreamPlayer extends React.Component {
     const video = this.HTML5StreamPlayerVideo;
     const videoThumb = this.scrubberThumbnail;
     videoThumb.pause();
-    video.currentTime = Math.min(this.safeVideoTime(videoThumb.currentTime), video.duration);
 
+    if (videoThumb.currentTime) {
+      let duration = video.duration ? video.duration : this.props.kDuration;
+      let time = Math.min(this.safeVideoTime(videoThumb.currentTime), duration);
+      video.currentTime = time;
+    }
+    
     if (this.state.scrubPosition === 1.0
       || (this.state.wasPlaying && (this.safeVideoTime(video.currentTime) < this.safeVideoTime(video.duration)))) {
       video.play();

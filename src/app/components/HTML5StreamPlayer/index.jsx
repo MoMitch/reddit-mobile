@@ -180,7 +180,6 @@ class HTML5StreamPlayer extends React.Component {
     const video = this.HTML5StreamPlayerVideo;
     
     const seekThumb = this.seekThumb;
-
     document.addEventListener('webkitfullscreenchange', this.exitHandler, false);
     document.addEventListener('mozfullscreenchange', this.exitHandler, false);
     document.addEventListener('fullscreenchange', this.exitHandler, false);
@@ -189,10 +188,21 @@ class HTML5StreamPlayer extends React.Component {
      
     // Add an event handler for seek events
     if (seekThumb) {
-      seekThumb.addEventListener('touchstart', this.scrubStart, false);
-      seekThumb.addEventListener('touchend', this.scrubEnd, false);
-      seekThumb.addEventListener('touchcancel', this.scrubEnd, false);
-      seekThumb.addEventListener('touchmove', this.setVideoPos, false);
+      //Passive event listeners only available on modern browsers - increases scroll performance
+      var passiveSupported = false;
+      try {
+        var options = Object.defineProperty({}, "passive", {
+          get: function() {
+            passiveSupported = true;
+          }
+        });
+
+        window.addEventListener("test", null, options);
+      } catch(err) {}
+      seekThumb.addEventListener('touchstart', this.scrubStart, passiveSupported ? { passive: true } : false);
+      seekThumb.addEventListener('touchend', this.scrubEnd, passiveSupported ? { passive: true } : false);
+      seekThumb.addEventListener('touchcancel', this.scrubEnd, passiveSupported ? { passive: true } : false);
+      seekThumb.addEventListener('touchmove', this.setVideoPos, passiveSupported ? { passive: true } : false);
     }
     
 

@@ -48,6 +48,7 @@ class HTML5StreamPlayer extends React.Component {
       isLoading: false,
       controlsHidden: false,
       wasPlaying: false,
+      controlTimeout: null,
     };
   }
 
@@ -85,7 +86,21 @@ class HTML5StreamPlayer extends React.Component {
     return num;
   }
 
+  startToggleControlsTimer() {
+    clearTimeout(this.state.controlTimeout);
+
+    const controlTimeout = window.setTimeout(() => { 
+      if (this.state.controlsHidden === false) {
+        this.toggleControls();
+      }
+    }, 2500);
+    this.setState({controlTimeout});
+  }
+
   toggleControls = () => {
+    if (this.state.controlsHidden === false) {
+      this.startToggleControlsTimer();
+    }
     this.setState({controlsHidden: !this.state.controlsHidden});
   }
 
@@ -331,6 +346,8 @@ class HTML5StreamPlayer extends React.Component {
       this.setState({videoScrollPaused: true, wasPlaying:false});
       this.sendTrackVideoEvent(VIDEO_EVENT.PAUSE);
     }
+
+    this.startToggleControlsTimer();
   }
 
   resetVideo = () => {
@@ -361,6 +378,7 @@ class HTML5StreamPlayer extends React.Component {
     } else if (document.webkitExitFullscreen) {
       document.webkitExitFullscreen();
     }
+    this.startToggleControlsTimer();
   }
 
   enterFullScreen = () => {
@@ -388,6 +406,7 @@ class HTML5StreamPlayer extends React.Component {
     }
 
     this.sendTrackVideoEvent(VIDEO_EVENT.FULLSCREEN);
+    this.startToggleControlsTimer();
   }
 
   muteVideo = () => {
@@ -406,6 +425,7 @@ class HTML5StreamPlayer extends React.Component {
 
     video.muted = !video.muted;
     this.setState({videoMuted: video.muted});
+    this.startToggleControlsTimer();
   }
 
   renderMute() {
@@ -609,6 +629,7 @@ class HTML5StreamPlayer extends React.Component {
     }
 
     //Create buffer bar for data
+    this.startToggleControlsTimer();
     this.drawBufferBar(video);
     this.sendTrackVideoEvent(VIDEO_EVENT.SEEK);
   }
@@ -626,6 +647,7 @@ class HTML5StreamPlayer extends React.Component {
       this.toggleControls();
       return;
     }
+    clearTimeout(this.state.controlTimeout);
 
     const videoThumb = this.scrubberThumbnail;
     const bufferBar = this.scrubBuffer;

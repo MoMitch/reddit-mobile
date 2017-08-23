@@ -62,8 +62,8 @@
   &:after {
     content:'';
     position:absolute;
-    top:-8px; bottom:-8px; 
-    left:-100vw; right:-100vw; 
+    top:-8px; bottom:-8px;
+    left:-100vw; right:-100vw;
   }
 }
 
@@ -132,6 +132,20 @@
     top: 0;
     width: 100%;
     height: 100%;
+    -webkit-transition: 0.5s;
+    -moz-transition: 0.5s;
+    -o-transition: 0.5s;
+    transition: 0.5s;
+  }
+
+  &__controlPanel.hide {
+    opacity: 0;
+    visibility: none;
+  }
+
+  &__controlPanel.show {
+    opacity: 1;
+    visibility: visible;
   }
 
   &__control {
@@ -391,22 +405,32 @@
   }
 
   &__replay-icon-container {
-    padding-top:0.38em;
-    padding-left:0.41em;
+    padding-top:5px;
+    padding-left:6px;
   }
 
   &__play-icon-container {
-    padding-top:10px;
+    padding-left: 2px;
+    padding-top: 4px;
+    height: @buffer-indicator-size;
+    width: @buffer-indicator-size;
+    outline:none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  &__play-icon {
+    color: @dark-grey;
+    fill: @dark-grey;
   }
 
   &__playback-action-circle {
-
+    outline:none;
+    -webkit-tap-highlight-color: transparent;
     position: absolute;
     top: 50%;
     left: 50%;
     text-align: center;
     background-color: rgba(255,255,255,0.6);
-    
 
     .icon-size(@icon-size) {
       width: @icon-size;
@@ -599,4 +623,3 @@
   50% { transform: rotate(5deg); }
   to { transform: rotate(-130deg); }
 }
-

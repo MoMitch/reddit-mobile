@@ -10,6 +10,8 @@ import { createSelector } from 'reselect';
 import { isCommentsPage } from 'platform/pageUtils';
 
 const T = React.PropTypes;
+const vector_path_play_icon = 'M3,3 L18,10.5 18,25.5 3,33 3,3 M18,10.5 L33,18 33,18 18,25.5 18,10.5';
+const vector_path_pause_icon = 'M3,3 L15,3 15,33 3,33 3,3 M19,3 L31,3 31,33 19,33 19,3';
 
 class HTML5StreamPlayer extends React.Component {
   static propTypes = {
@@ -44,6 +46,8 @@ class HTML5StreamPlayer extends React.Component {
       lastUpdate: null,
       totalServedTime: 0,
       isLoading: false,
+      controlsHidden: false,
+      wasPlaying: false,
     };
   }
 
@@ -81,6 +85,9 @@ class HTML5StreamPlayer extends React.Component {
     return num;
   }
 
+  toggleControls = () => {
+    this.setState({controlsHidden: !this.state.controlsHidden});
+  }
 
   isScrolledIntoView = () => {
     if (this.state.videoFullScreen) {
@@ -178,33 +185,31 @@ class HTML5StreamPlayer extends React.Component {
     /*if non-hls compatible browser, initialize dashjs media player
     (dash.js handles this check automatically).*/
     const video = this.HTML5StreamPlayerVideo;
-    
     const seekThumb = this.seekThumb;
     document.addEventListener('webkitfullscreenchange', this.exitHandler, false);
     document.addEventListener('mozfullscreenchange', this.exitHandler, false);
     document.addEventListener('fullscreenchange', this.exitHandler, false);
     document.addEventListener('MSFullscreenChange', this.exitHandler, false);
 
-     
     // Add an event handler for seek events
     if (seekThumb) {
       //Passive event listeners only available on modern browsers - increases scroll performance
-      var passiveSupported = false;
+      let passiveSupported = false;
       try {
-        var options = Object.defineProperty({}, "passive", {
+        const options = Object.defineProperty({}, 'passive', {
           get: function() {
             passiveSupported = true;
-          }
+          },
         });
 
-        window.addEventListener("test", null, options);
-      } catch(err) {}
+        window.addEventListener('test', null, options);
+      } catch (err) { return; }
+
       seekThumb.addEventListener('touchstart', this.scrubStart, passiveSupported ? { passive: true } : false);
       seekThumb.addEventListener('touchend', this.scrubEnd, passiveSupported ? { passive: true } : false);
       seekThumb.addEventListener('touchcancel', this.scrubEnd, passiveSupported ? { passive: true } : false);
       seekThumb.addEventListener('touchmove', this.setVideoPos, passiveSupported ? { passive: true } : false);
     }
-    
 
     video.addEventListener('canplay', this.videoDidLoad, false);
     video.addEventListener('ended', this.updateTime, false);
@@ -290,13 +295,24 @@ class HTML5StreamPlayer extends React.Component {
     return !videoIsPlaying;
   }
 
-  playPauseVideo = () => {
+  playPauseVideo = (event) => {
+    //If controls are hidden, return and let toggle controls take event
+    if (this.state.controlsHidden === true) {
+      return;
+    }
+
+    //Prevent the tap of parent objects (toggles controls)
+    event.stopPropagation();
+    event.nativeEvent.stopImmediatePropagation();
+
     const video = this.HTML5StreamPlayerVideo;
     if (this.videoIsPaused()) {
       if ((this.safeVideoTime(video.currentTime) >= this.safeVideoTime(video.duration) || video.ended)) {
         this.resetVideo();
         this.sendTrackVideoEvent(VIDEO_EVENT.REPLAY);
       } else {
+        const animation = this.playPauseAnimation;
+        animation.beginElement();
         this.sendTrackVideoEvent(VIDEO_EVENT.PLAY);
       }
       video.play();
@@ -309,6 +325,8 @@ class HTML5StreamPlayer extends React.Component {
         this.enterFullScreen();
       }
     } else {
+      const animation = this.playPauseAnimation;
+      animation.beginElement();
       video.pause();
       this.setState({videoScrollPaused: true, wasPlaying:false});
       this.sendTrackVideoEvent(VIDEO_EVENT.PAUSE);
@@ -346,6 +364,11 @@ class HTML5StreamPlayer extends React.Component {
   }
 
   enterFullScreen = () => {
+    //If controls are hidden, return and let toggle controls take event
+    if (this.state.controlsHidden === true) {
+      this.toggleControls();
+      return;
+    }
     //Default to standard video controls in fullscreen for iOS
     const video = this.HTML5StreamPlayerVideo;
 
@@ -368,6 +391,11 @@ class HTML5StreamPlayer extends React.Component {
   }
 
   muteVideo = () => {
+    if (this.state.controlsHidden === true) {
+      this.toggleControls();
+      return;
+    }
+
     const video = this.HTML5StreamPlayerVideo;
 
     if (video.muted) {
@@ -395,30 +423,53 @@ class HTML5StreamPlayer extends React.Component {
   }
 
   renderPlaybackIcon() {
-    if (this.state.videoLoaded === false) {
-      return null;
-    }
 
     const video = this.HTML5StreamPlayerVideo;
     if ((this.safeVideoTime(video.currentTime) >= this.safeVideoTime(video.duration) || video.ended)
       && this.props.isGif === false) {
       return (
-        <div className={ 'HTML5StreamPlayer__playback-action-circle regular' }>
+        <div onClick = { (event) => this.playPauseVideo(event) } className={ 'HTML5StreamPlayer__playback-action-circle regular' }>
           <div className={ 'HTML5StreamPlayer__replay-icon-container' }>
             <span className={ 'HTML5StreamPlayer__playback-action-icon darkgrey icon icon-replay' } />
           </div>
         </div>
       );
     }
-    //else show play button
+
+    let play_pause_vector_to;
+    let play_pause_vector_from;
+
+    if (this.state.wasPlaying === false) {
+      play_pause_vector_to = vector_path_play_icon;
+      play_pause_vector_from = vector_path_pause_icon;
+    } else {
+      play_pause_vector_to = vector_path_pause_icon;
+      play_pause_vector_from = vector_path_play_icon;
+    }
+
     return (
-      <div className={ 'HTML5StreamPlayer__playback-action-circle regular' }>
-        <div className={ 'HTML5StreamPlayer__play-icon-container' }>
-          <span
-            className={ 'HTML5StreamPlayer__playback-action-icon darkgrey icon icon-play_triangle' }
-          />
-        </div>
-      </div>
+      <button
+        className={ 'HTML5StreamPlayer__playback-action-circle regular' }
+        onClick = { (event) => this.playPauseVideo(event) }
+      >
+        <svg className={ 'HTML5StreamPlayer__play-icon-container' }>
+          <path className={ 'HTML5StreamPlayer__play-icon' } d={ play_pause_vector_to }>
+            <animate
+              ref = { (ref) => { this.playPauseAnimation = ref; } }
+              begin="indefinite"
+              attributeType="XML"
+              attributeName="d"
+              fill="freeze"
+              to={ play_pause_vector_to }
+              from={ play_pause_vector_from }
+              dur = "0.2s"
+              keySplines =".4 0 1 1"
+              repeatCount={ 1 }
+            >
+            </animate>
+          </path>
+        </svg>
+      </button>
     );
   }
 
@@ -430,9 +481,8 @@ class HTML5StreamPlayer extends React.Component {
 
     if (video) {
       //kDuration is not exact but if the video is not loaded it prevents us from getting errors
-      let duration = mainVideo.duration ? mainVideo.duration : this.props.kDuration;
-      let videoTime = Math.min(this.safeVideoTime(duration * tapPosition), this.props.kDuration);
-      video.currentTime = videoTime;
+      const duration = mainVideo.duration ? mainVideo.duration : this.props.kDuration;
+      video.currentTime = Math.min(this.safeVideoTime(duration * tapPosition), this.props.kDuration);
     }
 
     this.setState({
@@ -525,7 +575,7 @@ class HTML5StreamPlayer extends React.Component {
             autoPlay = { false }
             playsInline = { true }
             muted = { true }
-            ref = { (ref) => { this.scrubberThumbnail = ref; } } 
+            ref = { (ref) => { this.scrubberThumbnail = ref; } }
           >
             <source src={ this.props.scrubberThumbSource } type={ 'video/mp4' }/>
           </video>
@@ -535,18 +585,20 @@ class HTML5StreamPlayer extends React.Component {
   }
 
   scrubEnd = () => {
+    //If scrubbing was voided due to toggle controls, we don't want to handle the scrub
+    if (this.state.currentlyScrubbing === false) {
+      return;
+    }
+
     const video = this.HTML5StreamPlayerVideo;
     const videoThumb = this.scrubberThumbnail;
     videoThumb.pause();
-
-    if (videoThumb.currentTime) {
-      let duration = video.duration ? video.duration : this.props.kDuration;
-      let time = Math.min(this.safeVideoTime(videoThumb.currentTime), duration);
-      video.currentTime = time;
+    if (videoThumb.currentTime >= 0) {
+      const duration = video.duration ? video.duration : this.props.kDuration;
+      video.currentTime = Math.min(this.safeVideoTime(videoThumb.currentTime), duration);
     }
-    
-    if (this.state.scrubPosition === 1.0
-      || (this.state.wasPlaying && (this.safeVideoTime(video.currentTime) < this.safeVideoTime(video.duration)))) {
+
+    if (this.state.wasPlaying && (this.safeVideoTime(video.currentTime) < this.safeVideoTime(video.duration))) {
       video.play();
     }
 
@@ -555,7 +607,7 @@ class HTML5StreamPlayer extends React.Component {
         currentlyScrubbing: false,
       });
     }
-    
+
     //Create buffer bar for data
     this.drawBufferBar(video);
     this.sendTrackVideoEvent(VIDEO_EVENT.SEEK);
@@ -563,15 +615,18 @@ class HTML5StreamPlayer extends React.Component {
 
   calculateTapPosition(value) {
     const bufferBar = this.scrubBuffer;
-
     let tapPosition = ((value - (bufferBar.getBoundingClientRect().left)) / (bufferBar.clientWidth));
     tapPosition = Math.min(Math.max(tapPosition, 0.0), 1.0);
-
 
     return tapPosition;
   }
 
   scrubStart = (event) => {
+    if (this.state.controlsHidden === true) {
+      this.toggleControls();
+      return;
+    }
+
     const videoThumb = this.scrubberThumbnail;
     const bufferBar = this.scrubBuffer;
     const video = this.HTML5StreamPlayerVideo;
@@ -583,7 +638,7 @@ class HTML5StreamPlayer extends React.Component {
     if (videoThumb) {
       videoThumb.currentTime = this.safeVideoTime(videoThumb.duration) * tapPosition;
     }
-    
+
     this.setState({
       scrubPosition: tapPosition,
       thumbPosition: ((bufferBar.clientWidth-16) * tapPosition + 2),
@@ -606,14 +661,16 @@ class HTML5StreamPlayer extends React.Component {
     return (
       <div
         style = { { left: isNaN(videoPos) ? 0 :videoPos } }
-        ref = { (ref) => { this.seekThumb = ref; } } 
+        ref = { (ref) => { this.seekThumb = ref; } }
         className = 'HTML5StreamPlayer__control__seekThumb'
-      > 
+      >
       </div>
-    );  
+    );
   }
 
   render() {
+    const controlsClass = 'HTML5StreamPlayer__controlPanel' + (this.state.controlsHidden === true ? ' hide' : ' show');
+
     return (
       <div className = { 'HTML5StreamPlayer' } ref = { (ref) => { this.HTML5StreamPlayerContainer = ref; } }>
         <div
@@ -667,14 +724,18 @@ class HTML5StreamPlayer extends React.Component {
             </div>
           }
           
-          <div className = 'HTML5StreamPlayer__controlPanel' id='html5-video-stream-controls'>
+          <div
+            ref = { (ref) => { this.videoControls = ref; } }
+            className = { controlsClass }
+            id='html5-video-stream-controls'
+          >
             <div className = 'HTML5StreamPlayer__control__play'>
-              <button
+              <div
                 className = { 'HTML5StreamPlayer__control__play' }
-                onClick = { this.playPauseVideo }
+                onClick = { this.toggleControls }
               >
-                { this.videoIsPaused() && this.state.videoLoaded && this.renderPlaybackIcon() }
-              </button>
+                { this.state.videoLoaded && this.renderPlaybackIcon() }
+              </div>
             </div>
 
             <div className = 'HTML5StreamPlayer__control__bar'>
@@ -717,7 +778,7 @@ class HTML5StreamPlayer extends React.Component {
 
                   <div className = 'HTML5StreamPlayer__control__scrubBar__buffer__container'>
                     <canvas
-                      ref = { (ref) => { this.scrubBuffer = ref; } } 
+                      ref = { (ref) => { this.scrubBuffer = ref; } }
                       className = { 'HTML5StreamPlayer__control__scrubBar__buffer' }
                     >
                     </canvas>

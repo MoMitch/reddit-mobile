@@ -338,8 +338,13 @@ function renderImage(previewImage, imageURL, linkDescriptor, onClick,
                                     post.outboundLink, forceHTTPS, isPlaying);
   }
 
-  const aspectRatio = getAspectRatio(single, previewImage.width,
+  let aspectRatio;
+  if (post.media && post.media.reddit_video) {
+    aspectRatio = getVideoAspectRatio(single, post.media.reddit_video.width, post.media.reddit_video.height);
+  } else {
+    aspectRatio = getAspectRatio(single, previewImage.width,
                                      previewImage.height);
+  }
 
   if (previewImage && previewImage.url && !aspectRatio) {
     return renderImageOfUnknownSize(
@@ -431,12 +436,7 @@ function renderVideo(videoSpec, posterImage, aspectRatio, props) {
   const { post, onUpdatePostPlaytime } = props;
   if (videoSpec.hls || videoSpec.dash) {
     //video limited to 16:9 as specced, will be letterboxed if different reservation.
-    let aspectRatio;
-    if ((videoSpec.width / videoSpec.height) < (16 / 9)) {
-      aspectRatio = getAspectRatio(false, 16, 9);
-    } else {
-      aspectRatio = getAspectRatio(false, videoSpec.width, videoSpec.height);
-    }
+    let aspectRatio = getVideoAspectRatio(false, videoSpec.width, videoSpec.height);
 
     return (
       <HTML5StreamPlayer
@@ -590,6 +590,13 @@ function getAspectRatio(single, width, height) {
   }
 
   return DEFAULT_ASPECT_RATIO;
+}
+
+function getVideoAspectRatio(single, width, height) {
+  if ((width / height) < (16 / 9)) {
+    return getAspectRatio(true, 16, 9);
+  }
+  return getAspectRatio(single, width, height);
 }
 
 function autoPlayGif(gif) {

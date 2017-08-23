@@ -12,7 +12,7 @@
 @thumb-width: 16px;
 @thumb-shadow-size: 1px;
 @thumb-shadow-blur: 1px;
-@thumb-shadow-color: #111;
+@thumb-shadow-color: #00b59d;
 @thumb-border-width: 1px;
 @thumb-border-color: #0DD3BB;
 
@@ -48,8 +48,6 @@
 }
 
 .thumb() {
-  .shadow(@thumb-shadow-size,@thumb-shadow-blur,@thumb-shadow-color);
-  border: @thumb-border-width solid @thumb-border-color;
   height: @thumb-height;
   width: @thumb-width;
   border-radius: @thumb-radius;
@@ -77,6 +75,8 @@
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+  background-repeat:no-repeat;
+  background-size:auto;
 
   &__video__fullscreen {
     -webkit-video-playable-inline: true;
@@ -87,6 +87,8 @@
     position: absolute;
     top: 50%;
     transform: translate(-50%, -50%);
+    background-repeat:no-repeat;
+    background-size:auto;
   }
 
   &__video__regular {
@@ -95,6 +97,8 @@
     position: absolute;
     top: 0; 
     -webkit-video-playable-inline: true;
+    background-repeat:no-repeat;
+    background-size:auto;
   }
 
   &__video__regular::-webkit-media-controls-play-button {
@@ -405,16 +409,17 @@
   }
 
   &__replay-icon-container {
-    padding-top:5px;
-    padding-left:6px;
+    padding-top:4px;
+    padding-left:5px;
   }
 
   &__play-icon-container {
-    padding-left: 2px;
-    padding-top: 4px;
     height: @buffer-indicator-size;
-    width: @buffer-indicator-size;
+    width: 36px;
     outline:none;
+    position: absolute;
+    top: 6px;
+    left: 7px;
     -webkit-tap-highlight-color: transparent;
   }
 
@@ -429,7 +434,6 @@
     position: absolute;
     top: 50%;
     left: 50%;
-    text-align: center;
     background-color: rgba(255,255,255,0.6);
 
     .icon-size(@icon-size) {
@@ -454,7 +458,6 @@
   &__playback-action-icon {
     // some of the icons are a little off center...
     &.icon-play_triangle {
-      margin-left: 0.3em;
       font-size: 28px;
       line-height: 28px;
     }

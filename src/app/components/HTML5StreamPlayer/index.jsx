@@ -10,7 +10,7 @@ import { createSelector } from 'reselect';
 import { isCommentsPage } from 'platform/pageUtils';
 
 const T = React.PropTypes;
-const vector_path_play_icon = 'M3,3 L18,10.5 18,25.5 3,33 3,3 M18,10.5 L33,18 33,18 18,25.5 18,10.5';
+const vector_path_play_icon = 'M6,3 L18,10.5 18,25.5 6,33 6,3 M18,10.5 L33,18 33,18 18,25.5 18,10.5';
 const vector_path_pause_icon = 'M3,3 L15,3 15,33 3,33 3,3 M19,3 L31,3 31,33 19,33 19,3';
 
 class HTML5StreamPlayer extends React.Component {
@@ -46,8 +46,8 @@ class HTML5StreamPlayer extends React.Component {
       lastUpdate: null,
       totalServedTime: 0,
       isLoading: false,
-      controlsHidden: false,
-      wasPlaying: false,
+      controlsHidden: true,
+      wasPlaying: null,
       controlTimeout: null,
     };
   }
@@ -98,6 +98,7 @@ class HTML5StreamPlayer extends React.Component {
   }
 
   toggleControls = () => {
+    const video = this.HTML5StreamPlayerVideo;
     if (this.state.controlsHidden === false) {
       this.startToggleControlsTimer();
     }
@@ -341,8 +342,8 @@ class HTML5StreamPlayer extends React.Component {
       }
     } else {
       const animation = this.playPauseAnimation;
-      animation.beginElement();
       video.pause();
+      animation.beginElement();
       this.setState({videoScrollPaused: true, wasPlaying:false});
       this.sendTrackVideoEvent(VIDEO_EVENT.PAUSE);
     }
@@ -459,7 +460,10 @@ class HTML5StreamPlayer extends React.Component {
     let play_pause_vector_to;
     let play_pause_vector_from;
 
-    if (this.state.wasPlaying === false) {
+    if (this.state.wasPlaying === null) {
+      play_pause_vector_to = vector_path_pause_icon;
+      play_pause_vector_from = vector_path_pause_icon;
+    } else if (this.state.wasPlaying === false) {
       play_pause_vector_to = vector_path_play_icon;
       play_pause_vector_from = vector_path_pause_icon;
     } else {
@@ -513,7 +517,6 @@ class HTML5StreamPlayer extends React.Component {
   }
 
   drawBufferBar(video = null) {
-
     //no bufferbar for gifs
     if (this.props.isGif) {
       return;
@@ -568,6 +571,13 @@ class HTML5StreamPlayer extends React.Component {
       newTime += performance.now() - this.state.lastUpdate;
     }
 
+    if (video.ended && this.state.controlsHidden === true) {
+      if (this.state.controlsHidden === true) {
+        this.toggleControls();
+      }
+      clearTimeout(this.state.controlTimeout);
+    }
+
     if (video.currentTime !== null && video.duration !== null) {
       this.setState({
         currentTime: this.secondsToMinutes(this.safeVideoTime(video.currentTime)),
@@ -618,9 +628,13 @@ class HTML5StreamPlayer extends React.Component {
       video.currentTime = Math.min(this.safeVideoTime(videoThumb.currentTime), duration);
     }
 
-    if (this.state.wasPlaying && (this.safeVideoTime(video.currentTime) < this.safeVideoTime(video.duration))) {
+    //Mobile web is very poor at recognizing the 'end' of a video when scrubbed
+    //Manually resuming if seeked to end will ensure replay icon displays
+    if (this.state.scrubPosition === 1.0
+      || (this.state.wasPlaying && (this.safeVideoTime(video.currentTime) < this.safeVideoTime(video.duration)))) {
       video.play();
     }
+
 
     if (video.currentTime !== null && video.duration !== null) {
       this.setState({

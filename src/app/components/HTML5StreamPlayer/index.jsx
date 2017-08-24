@@ -49,6 +49,7 @@ class HTML5StreamPlayer extends React.Component {
       controlsHidden: true,
       wasPlaying: null,
       controlTimeout: null,
+      resumeAfterFullscreen: false,
     };
   }
 
@@ -89,7 +90,7 @@ class HTML5StreamPlayer extends React.Component {
   startToggleControlsTimer() {
     clearTimeout(this.state.controlTimeout);
 
-    const controlTimeout = window.setTimeout(() => { 
+    const controlTimeout = window.setTimeout(() => {
       if (this.state.controlsHidden === false) {
         this.toggleControls();
       }
@@ -98,7 +99,6 @@ class HTML5StreamPlayer extends React.Component {
   }
 
   toggleControls = () => {
-    const video = this.HTML5StreamPlayerVideo;
     if (this.state.controlsHidden === false) {
       this.startToggleControlsTimer();
     }
@@ -229,7 +229,7 @@ class HTML5StreamPlayer extends React.Component {
 
     video.addEventListener('canplay', this.videoDidLoad, false);
     video.addEventListener('ended', this.updateTime, false);
-
+    video.addEventListener('webkitendfullscreen', this.onVideoEndsFullScreen, false);
 
     //sometimes the video will be ready before didMount, in this case, submit 'canplay' manually
     if (video.readyState >= 3) {
@@ -273,6 +273,7 @@ class HTML5StreamPlayer extends React.Component {
 
     video.removeEventListener('canplay', this.videoDidLoad, false);
     video.removeEventListener('ended', this.updateTime, false);
+    video.removeEventListener('webkitendfullscreen', this.onVideoEndsFullScreen, false);
     window.removeEventListener('scroll', this.state.debounceFunc, false);
 
     // Add an event handler for seek events
@@ -371,7 +372,29 @@ class HTML5StreamPlayer extends React.Component {
     }
   }
 
+  fullscreenPaused = () => {
+    const video = this.HTML5StreamPlayerVideo;
+    //Keep track of a pause event that occurs on 'done' event
+    //(listener added while fullscreen, event fires after fullscreen exit)
+    if (!video.webkitDisplayingFullscreen && this.isIOS()) {
+      this.setState({ resumeAfterFullscreen: true });
+    }
+  }
+
+  onVideoEndsFullScreen = () => {
+    const video = this.HTML5StreamPlayerVideo;
+    //The iOS 'done' button forces a video pause, this ensure the video continues afterwards
+    if (this.state.resumeAfterFullscreen === true || this.props.isGif) {
+      video.play();
+      this.setState({ resumeAfterFullscreen:false });
+    }
+  }
+
   exitFullscreen = () => {
+    //Default to standard video controls in fullscreen for iOS
+    const video = this.HTML5StreamPlayerVideo;
+    video.removeEventListener('pause', this.fullscreenPaused, false);
+
     if (document.exitFullscreen) {
       document.exitFullscreen();
     } else if (document.mozCancelFullScreen) {
@@ -390,6 +413,7 @@ class HTML5StreamPlayer extends React.Component {
     }
     //Default to standard video controls in fullscreen for iOS
     const video = this.HTML5StreamPlayerVideo;
+    video.addEventListener('pause', this.fullscreenPaused, false);
 
     if (video.requestFullscreen) {
       video.requestFullscreen();

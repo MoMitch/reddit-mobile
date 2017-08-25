@@ -200,9 +200,12 @@ export function Post(props, context) {
     );
   }
 
+  //Rddit videos without expando button (no thubmnails) should not be re-expanded
+  let hidePreviouslExpandedVideo = (post.media && post.media.reddit_video) && !post.thumbnail;
+
   const isPromotedUserPost = post.promoted && post.originalLink;
   let contentOrNil;
-  if (!displayCompact || hasExpandedCompact) {
+  if (!displayCompact || (hasExpandedCompact && !hidePreviouslExpandedVideo)) {
     contentOrNil = (
       <PostContent
         post={ post }

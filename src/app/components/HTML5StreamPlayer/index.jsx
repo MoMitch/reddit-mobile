@@ -34,7 +34,7 @@ class HTML5StreamPlayer extends React.Component {
       videoMuted: true,
       videoFullScreen: false,
       debounceFunc: null,
-      videoWasInView: false,
+      videoWasInView: null,
       currentTime: '00:00',
       totalTime: '00:00',
       currentlyScrubbing: false,
@@ -154,12 +154,16 @@ class HTML5StreamPlayer extends React.Component {
       && this.videoIsPaused() === true
       && this.state.videoScrollPaused === false) {
       video.play();
-      this.sendTrackVideoEvent(VIDEO_EVENT.SCROLL_AUTOPLAY);
+      if (this.state.videoWasInView !== null) {
+        this.sendTrackVideoEvent(VIDEO_EVENT.SCROLL_AUTOPLAY);
+      }
     }
 
     if (this.videoIsPaused() === false && videoIsInView === false) {
       video.pause();
-      this.sendTrackVideoEvent(VIDEO_EVENT.SCROLL_PAUSE);
+      if (this.state.videoWasInView === true) {
+        this.sendTrackVideoEvent(VIDEO_EVENT.SCROLL_PAUSE);
+      }
     }
 
     this.setState({
@@ -191,14 +195,14 @@ class HTML5StreamPlayer extends React.Component {
         this.setState({
           videoLoaded: true,
           totalServedTime: this.props.postData.videoPlaytime * 1000.0,
-          videoWasInView: false,
+          videoWasInView: null,
         });
         this.sendTrackVideoEvent(VIDEO_EVENT.CHANGED_PAGETYPE, this.getPercentServed());
         video.currentTime = this.safeVideoTime(this.props.postData.videoPlaytime);
       } else {
         this.setState({
           videoLoaded: true,
-          videoWasInView: false,
+          videoWasInView: null,
         });
       }
 

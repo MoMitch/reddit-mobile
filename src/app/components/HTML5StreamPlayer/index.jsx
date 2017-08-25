@@ -10,7 +10,7 @@ import { createSelector } from 'reselect';
 import { isCommentsPage } from 'platform/pageUtils';
 
 const T = React.PropTypes;
-const vector_path_play_icon = 'M6,3 L18,10.5 18,25.5 6,33 6,3 M18,10.5 L33,18 33,18 18,25.5 18,10.5';
+const vector_path_play_icon = 'M6,3 L21,10.5 21,25.5 6,33 6,3 M21,10.5 L36,18 36,18 21,25.5 21,10.5';
 const vector_path_pause_icon = 'M3,3 L15,3 15,33 3,33 3,3 M19,3 L31,3 31,33 19,33 19,3';
 
 class HTML5StreamPlayer extends React.Component {
@@ -89,9 +89,8 @@ class HTML5StreamPlayer extends React.Component {
 
   startToggleControlsTimer() {
     clearTimeout(this.state.controlTimeout);
-
     const controlTimeout = window.setTimeout(() => {
-      if (this.state.controlsHidden === false) {
+      if (this.state.controlsHidden === false && this.props.isGif === false) {
         this.toggleControls();
       }
     }, 2500);
@@ -99,6 +98,15 @@ class HTML5StreamPlayer extends React.Component {
   }
 
   toggleControls = () => {
+    if (this.props.isGif === true) {
+      //is gif
+      if (this.state.videoFullScreen === true) {
+        this.exitFullscreen();
+      } else {
+        this.enterFullScreen();
+      }
+    }
+
     if (this.state.controlsHidden === false) {
       this.startToggleControlsTimer();
     }
@@ -334,13 +342,6 @@ class HTML5StreamPlayer extends React.Component {
       }
       video.play();
       this.setState({videoScrollPaused: false, wasPlaying:true});
-    } else if (this.props.isGif) {
-      //is gif
-      if (this.state.videoFullScreen) {
-        this.exitFullscreen();
-      } else {
-        this.enterFullScreen();
-      }
     } else {
       const animation = this.playPauseAnimation;
       video.pause();
@@ -407,7 +408,7 @@ class HTML5StreamPlayer extends React.Component {
 
   enterFullScreen = () => {
     //If controls are hidden, return and let toggle controls take event
-    if (this.state.controlsHidden === true) {
+    if (this.state.controlsHidden === true && this.props.isGif === false) {
       this.toggleControls();
       return;
     }
@@ -490,9 +491,11 @@ class HTML5StreamPlayer extends React.Component {
     } else if (this.state.wasPlaying === false) {
       play_pause_vector_to = vector_path_play_icon;
       play_pause_vector_from = vector_path_pause_icon;
-    } else {
+    } else if (this.props.isGif === false) {
       play_pause_vector_to = vector_path_pause_icon;
       play_pause_vector_from = vector_path_play_icon;
+    } else {
+      return null;
     }
 
     return (

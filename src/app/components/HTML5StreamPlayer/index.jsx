@@ -219,10 +219,7 @@ class HTML5StreamPlayer extends React.Component {
     (dash.js handles this check automatically).*/
     const video = this.HTML5StreamPlayerVideo;
     const seekThumb = this.seekThumb;
-    document.addEventListener('webkitfullscreenchange', this.exitHandler, false);
-    document.addEventListener('mozfullscreenchange', this.exitHandler, false);
-    document.addEventListener('fullscreenchange', this.exitHandler, false);
-    document.addEventListener('MSFullscreenChange', this.exitHandler, false);
+    
 
     // Add an event handler for seek events
     if (seekThumb) {
@@ -262,6 +259,10 @@ class HTML5StreamPlayer extends React.Component {
     video.addEventListener('canplay', this.videoDidLoad, false);
     video.addEventListener('ended', this.updateTime, false);
     video.addEventListener('webkitendfullscreen', this.onVideoEndsFullScreen, false);
+    video.addEventListener('webkitfullscreenchange', this.exitHandler, false);
+    video.addEventListener('mozfullscreenchange', this.exitHandler, false);
+    video.addEventListener('fullscreenchange', this.exitHandler, false);
+    video.addEventListener('MSFullscreenChange', this.exitHandler, false);
 
     //sometimes the video will be ready before didMount, in this case, submit 'canplay' manually
     if (video.readyState >= 3) {
@@ -283,7 +284,7 @@ class HTML5StreamPlayer extends React.Component {
   componentWillMount() {
     /*if video has a previous time position, prevent autoplay,
     this stops the video from continuing unintentionally on report modal open/close*/
-    if (this.props.postData.videoPlaytime) {
+    if (this.props.postData.videoPlaytime > 0.0) {
       this.setState({
         autoPlay: false,
         totalTime: this.secondsToMinutes(this.safeVideoTime(this.props.kDuration)),
@@ -319,10 +320,10 @@ class HTML5StreamPlayer extends React.Component {
       seekThumb.removeEventListener('touchmove', this.setVideoPos, false);
     }
 
-    document.removeEventListener('webkitfullscreenchange', this.exitHandler, false);
-    document.removeEventListener('mozfullscreenchange', this.exitHandler, false);
-    document.removeEventListener('fullscreenchange', this.exitHandler, false);
-    document.removeEventListener('MSFullscreenChange', this.exitHandler, false);
+    video.removeEventListener('webkitfullscreenchange', this.exitHandler, false);
+    video.removeEventListener('mozfullscreenchange', this.exitHandler, false);
+    video.removeEventListener('fullscreenchange', this.exitHandler, false);
+    video.removeEventListener('MSFullscreenChange', this.exitHandler, false);
   }
 
   componentDidUpdate(prevProps, prevState) {
@@ -653,7 +654,7 @@ class HTML5StreamPlayer extends React.Component {
     const video = this.HTML5StreamPlayerVideo;
     this.drawBufferBar(video);
 
-    if (this.state.currentlyScrubbing === true) {
+    if (this.state.currentlyScrubbing === true || this.videoLoadedSuccessfully === false) {
       return;
     }
 

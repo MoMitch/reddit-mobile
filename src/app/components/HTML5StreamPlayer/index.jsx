@@ -50,6 +50,7 @@ class HTML5StreamPlayer extends React.Component {
       wasPlaying: null,
       controlTimeout: null,
       resumeAfterFullscreen: false,
+      lastResumeAfterFullscreen: true,
     };
   }
 
@@ -82,8 +83,7 @@ class HTML5StreamPlayer extends React.Component {
       || num === Number.NEGATIVE_INFINITY) {
       return 0;
     }
-    //Mobile html5 video doesn't like seeking to long floating point numbers, we set everything to run off 1 d.p.
-    // return +(num).toFixed(1);
+
     return num;
   }
 
@@ -378,23 +378,35 @@ class HTML5StreamPlayer extends React.Component {
     //Keep track of a pause event that occurs on 'done' event
     //(listener added while fullscreen, event fires after fullscreen exit)
     if (!video.webkitDisplayingFullscreen && this.isIOS()) {
-      this.setState({ resumeAfterFullscreen: true });
+      this.setState({ resumeAfterFullscreen: true, lastResumeAfterFullscreen: this.state.resumeAfterFullscreen });
+    } else {
+      this.setState({ lastResumeAfterFullscreen: false });
     }
+  }
+
+  fullscreenPlayed = () => {
+    const video = this.HTML5StreamPlayerVideo;
+    //Keep track of a pause event that occurs on 'done' event
+    //(listener added while fullscreen, event fires after fullscreen exit)
+    this.setState({ resumeAfterFullscreen: true, lastResumeAfterFullscreen: this.state.lastResumeAfterFullscreen });
   }
 
   onVideoEndsFullScreen = () => {
     const video = this.HTML5StreamPlayerVideo;
     //The iOS 'done' button forces a video pause, this ensure the video continues afterwards
-    if (this.state.resumeAfterFullscreen === true || this.props.isGif) {
+    const resumeVideo = (this.state.lastResumeAfterFullscreen === true || this.props.isGif);
+    if (resumeVideo) {
       video.play();
-      this.setState({ resumeAfterFullscreen:false });
     }
+    this.setState({ resumeAfterFullscreen:false, lastResumeAfterFullscreen: true, wasPlaying: resumeVideo });
+    this.render();
   }
 
   exitFullscreen = () => {
     //Default to standard video controls in fullscreen for iOS
     const video = this.HTML5StreamPlayerVideo;
     video.removeEventListener('pause', this.fullscreenPaused, false);
+    video.removeEventListener('play', this.fullscreenPlayed, false);
 
     if (document.exitFullscreen) {
       document.exitFullscreen();
@@ -415,6 +427,7 @@ class HTML5StreamPlayer extends React.Component {
     //Default to standard video controls in fullscreen for iOS
     const video = this.HTML5StreamPlayerVideo;
     video.addEventListener('pause', this.fullscreenPaused, false);
+    video.addEventListener('play', this.fullscreenPlayed, false);
 
     if (video.requestFullscreen) {
       video.requestFullscreen();
@@ -428,9 +441,13 @@ class HTML5StreamPlayer extends React.Component {
 
     if (this.state.videoMuted) {
       video.muted = !video.muted;
-      this.setState({videoMuted: video.muted});
     }
 
+    this.setState({
+      videoMuted: video.muted,
+      resumeAfterFullscreen: !this.videoIsPaused(),
+      lastResumeAfterFullscreen: !this.videoIsPaused(),
+    });
     this.sendTrackVideoEvent(VIDEO_EVENT.FULLSCREEN);
     this.startToggleControlsTimer();
   }

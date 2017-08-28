@@ -337,6 +337,7 @@ class HTML5StreamPlayer extends React.Component {
         this.sendTrackVideoEvent(VIDEO_EVENT.REPLAY);
       } else {
         const animation = this.playPauseAnimation;
+        video.pause();
         animation.beginElement();
         this.sendTrackVideoEvent(VIDEO_EVENT.PLAY);
       }
@@ -367,10 +368,11 @@ class HTML5StreamPlayer extends React.Component {
       this.setState({videoFullScreen: true});
     }
 
-    if (this.state.wasPlaying) {
+    if (this.state.wasPlaying === true || this.props.isGif === true) {
       const video = this.HTML5StreamPlayerVideo;
       video.play();
     }
+
   }
 
   fullscreenPaused = () => {
@@ -400,6 +402,9 @@ class HTML5StreamPlayer extends React.Component {
     }
     this.setState({ resumeAfterFullscreen:false, lastResumeAfterFullscreen: true, wasPlaying: resumeVideo });
     this.render();
+    //Ensure we animate to correct icon
+    const animation = this.playPauseAnimation;
+    animation.beginElement();
   }
 
   exitFullscreen = () => {

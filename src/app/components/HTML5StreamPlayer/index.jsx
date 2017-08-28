@@ -162,7 +162,12 @@ class HTML5StreamPlayer extends React.Component {
       this.sendTrackVideoEvent(VIDEO_EVENT.SCROLL_PAUSE);
     }
 
-    this.setState({videoWasInView: videoIsInView, videoScrollPaused: false, isLoading, mediaPlayer: player});
+    this.setState({
+      videoWasInView: videoIsInView,
+      videoScrollPaused: false,
+      isLoading,
+      mediaPlayer: player,
+    });
   }
 
   secondsToMinutes(seconds) {
@@ -229,10 +234,25 @@ class HTML5StreamPlayer extends React.Component {
         window.addEventListener('test', null, options);
       } catch (err) { return; }
 
-      seekThumb.addEventListener('touchstart', this.scrubStart, passiveSupported ? { passive: true } : false);
-      seekThumb.addEventListener('touchend', this.scrubEnd, passiveSupported ? { passive: true } : false);
-      seekThumb.addEventListener('touchcancel', this.scrubEnd, passiveSupported ? { passive: true } : false);
-      seekThumb.addEventListener('touchmove', this.setVideoPos, passiveSupported ? { passive: true } : false);
+      seekThumb.addEventListener(
+        'touchstart',
+        this.scrubStart,
+        passiveSupported ? { passive: true } : false
+      );
+      seekThumb.addEventListener(
+        'touchend',
+        this.scrubEnd,
+        passiveSupported ? { passive: true } : false
+      );
+      seekThumb.addEventListener(
+        'touchcancel',
+        this.scrubEnd,
+        passiveSupported ? { passive: true } : false
+      );
+      seekThumb.addEventListener('touchmove',
+        this.setVideoPos,
+        passiveSupported ? { passive: true } : false
+      );
     }
 
     video.addEventListener('canplay', this.videoDidLoad, false);
@@ -332,7 +352,9 @@ class HTML5StreamPlayer extends React.Component {
 
     const video = this.HTML5StreamPlayerVideo;
     if (this.videoIsPaused()) {
-      if ((this.safeVideoTime(video.currentTime) >= this.safeVideoTime(video.duration) || video.ended)) {
+      if ((this.safeVideoTime(video.currentTime)
+        >= this.safeVideoTime(video.duration)
+        || video.ended)) {
         this.resetVideo();
         this.sendTrackVideoEvent(VIDEO_EVENT.REPLAY);
       } else {
@@ -380,17 +402,22 @@ class HTML5StreamPlayer extends React.Component {
     //Keep track of a pause event that occurs on 'done' event
     //(listener added while fullscreen, event fires after fullscreen exit)
     if (!video.webkitDisplayingFullscreen && this.isIOS()) {
-      this.setState({ resumeAfterFullscreen: true, lastResumeAfterFullscreen: this.state.resumeAfterFullscreen });
+      this.setState({
+        resumeAfterFullscreen: true,
+        lastResumeAfterFullscreen: this.state.resumeAfterFullscreen,
+      });
     } else {
       this.setState({ lastResumeAfterFullscreen: false });
     }
   }
 
   fullscreenPlayed = () => {
-    const video = this.HTML5StreamPlayerVideo;
     //Keep track of a pause event that occurs on 'done' event
     //(listener added while fullscreen, event fires after fullscreen exit)
-    this.setState({ resumeAfterFullscreen: true, lastResumeAfterFullscreen: this.state.lastResumeAfterFullscreen });
+    this.setState({
+      resumeAfterFullscreen: true,
+      lastResumeAfterFullscreen: this.state.lastResumeAfterFullscreen,
+    });
   }
 
   onVideoEndsFullScreen = () => {
@@ -400,7 +427,11 @@ class HTML5StreamPlayer extends React.Component {
     if (resumeVideo) {
       video.play();
     }
-    this.setState({ resumeAfterFullscreen:false, lastResumeAfterFullscreen: true, wasPlaying: resumeVideo });
+    this.setState({
+      resumeAfterFullscreen:false,
+      lastResumeAfterFullscreen: true,
+      wasPlaying: resumeVideo,
+    });
     this.render();
     //Ensure we animate to correct icon
     const animation = this.playPauseAnimation;
@@ -493,12 +524,18 @@ class HTML5StreamPlayer extends React.Component {
   renderPlaybackIcon() {
 
     const video = this.HTML5StreamPlayerVideo;
-    if ((this.safeVideoTime(video.currentTime) >= this.safeVideoTime(video.duration) || video.ended)
-      && this.props.isGif === false) {
+    if ((this.safeVideoTime(video.currentTime) >= this.safeVideoTime(video.duration)
+      || video.ended)
+        && this.props.isGif === false) {
       return (
-        <div onClick = { (event) => this.playPauseVideo(event) } className={ 'HTML5StreamPlayer__playback-action-circle regular' }>
+        <div
+          onClick = { (event) => this.playPauseVideo(event) }
+          className={ 'HTML5StreamPlayer__playback-action-circle regular' }
+        >
           <div className={ 'HTML5StreamPlayer__replay-icon-container' }>
-            <span className={ 'HTML5StreamPlayer__playback-action-icon darkgrey icon icon-replay' } />
+            <span
+              className={ 'HTML5StreamPlayer__playback-action-icon darkgrey icon icon-replay' }
+            />
           </div>
         </div>
       );
@@ -680,7 +717,9 @@ class HTML5StreamPlayer extends React.Component {
     //Mobile web is very poor at recognizing the 'end' of a video when scrubbed
     //Manually resuming if seeked to end will ensure replay icon displays
     if (this.state.scrubPosition === 1.0
-      || (this.state.wasPlaying && (this.safeVideoTime(video.currentTime) < this.safeVideoTime(video.duration)))) {
+      || (this.state.wasPlaying
+        && (this.safeVideoTime(video.currentTime)
+          < this.safeVideoTime(video.duration)))) {
       video.play();
     }
 
@@ -738,7 +777,8 @@ class HTML5StreamPlayer extends React.Component {
 
     let videoPos = 0;
     if (bufferBar && this.state.currentlyScrubbing === false && video !== null) {
-      videoPos = ((bufferBar.clientWidth - 16.0) * (this.safeVideoTime(video.currentTime)/this.safeVideoTime(video.duration)));
+      videoPos = ((bufferBar.clientWidth - 16.0)
+        * (this.safeVideoTime(video.currentTime)/this.safeVideoTime(video.duration)));
     } else if (bufferBar) {
       videoPos = (this.state.scrubPosition * (bufferBar.clientWidth - 16.0));
     }
@@ -754,10 +794,14 @@ class HTML5StreamPlayer extends React.Component {
   }
 
   render() {
-    const controlsClass = 'HTML5StreamPlayer__controlPanel' + (this.state.controlsHidden === true ? ' hide' : ' show');
+    const controlsClass = 'HTML5StreamPlayer__controlPanel'
+      + (this.state.controlsHidden === true ? ' hide' : ' show');
 
     return (
-      <div className = { 'HTML5StreamPlayer' } ref = { (ref) => { this.HTML5StreamPlayerContainer = ref; } }>
+      <div
+        className = { 'HTML5StreamPlayer' }
+        ref = { (ref) => { this.HTML5StreamPlayerContainer = ref; } }
+      >
         <div
           className = { this.state.videoFullScreen ?
             'HTML5StreamPlayer__videoContainer__fullscreen'
@@ -845,7 +889,10 @@ class HTML5StreamPlayer extends React.Component {
               }
 
               <div className = 'HTML5StreamPlayer__control__mute'>
-                <button className = 'HTML5StreamPlayer__control__button' onClick = { this.muteVideo }>
+                <button
+                  className = 'HTML5StreamPlayer__control__button'
+                  onClick = { this.muteVideo }
+                >
                   { this.renderMute() }
                 </button>
               </div>

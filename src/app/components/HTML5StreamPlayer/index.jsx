@@ -299,6 +299,9 @@ class HTML5StreamPlayer extends React.Component {
     const video = this.HTML5StreamPlayerVideo;
     const seekThumb = this.seekThumb;
 
+    //Clear the timeout to prevent it from being called after unmount.
+    clearTimeout(this.state.controlTimeout);
+
     video.removeEventListener('canplay', this.videoDidLoad, false);
     video.removeEventListener('ended', this.updateTime, false);
     video.removeEventListener('webkitendfullscreen', this.onVideoEndsFullScreen, false);

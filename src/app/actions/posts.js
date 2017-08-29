@@ -5,7 +5,7 @@ import HiddenEndpoint from 'apiClient/apis/HiddenEndpoint';
 import EditUserTextEndpoint from 'apiClient/apis/EditUserTextEndpoint';
 import PostModel from 'apiClient/models/PostModel';
 import { trackVideoPlayerEvent } from 'lib/eventUtils';
-
+import { VIDEO_EVENT } from 'app/constants';
 import { apiOptionsFromState } from 'lib/apiOptionsFromState';
 
 import { getEventTracker } from 'lib/eventTracker';
@@ -107,12 +107,24 @@ export const toggleHidePost = postId => async (dispatch, getState) => {
   }
 };
 
-export const updatePostPlaytime = (postId, newPlaytime) => async (dispatch, getState) => {
+export const updatePostPlaytime = (postId, newPlaytime, newTotalPlaytime, videoTimerHandler, payload) => async (dispatch, getState) => {
   const state = getState();
   const post = state.posts[postId];
-  
+
+  //Clear previous timer - ensure only one event is sent one minute after user stops watching
+  clearTimeout(videoTimerHandler);
+  const newHandler = setTimeout((state, newHandler, payload) => {
+    trackVideoPlayerEvent(state, VIDEO_EVENT.SERVED_VIDEO, payload);
+  }, 60000, state, newHandler, payload);
+
   try {
-    const newPost = PostModel.fromJSON({ ...post.toJSON(), videoPlaytime: newPlaytime });
+    const newPost = PostModel.fromJSON({
+      ...post.toJSON(),
+      videoPlaytime: newPlaytime,
+      videoTotalPlaytime: newPlaytime,
+      videoTimerHandler: newHandler,
+    });
+
     dispatch(updatePlaying(newPost));
   } catch (e) {
     console.error(e);

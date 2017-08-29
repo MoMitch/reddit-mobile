@@ -56,7 +56,6 @@ PostContent.propTypes = {
   editPending: T.bool,
   onToggleEdit: T.func.isRequired,
   onUpdateSelftext: T.func.isRequired,
-  onUpdatePostPlaytime: T.func.isRequired,
   forceHTTPS: T.bool.isRequired,
   isDomainExternal: T.bool.isRequired,
   renderMediaFullbleed: T.bool.isRequired,
@@ -433,7 +432,7 @@ function renderIframe(src, aspectRatio) {
 }
 
 function renderVideo(videoSpec, posterImage, aspectRatio, props) {
-  const { post, onUpdatePostPlaytime } = props;
+  const { post } = props;
   if (videoSpec.hls || videoSpec.dash) {
     //video limited to 16:9 as specced, will be letterboxed if different reservation.
     let aspectRatio = getVideoAspectRatio(false, videoSpec.width, videoSpec.height);
@@ -441,7 +440,6 @@ function renderVideo(videoSpec, posterImage, aspectRatio, props) {
     return (
       <HTML5StreamPlayer
         postData = { post }
-        onUpdatePostPlaytime = { onUpdatePostPlaytime }
         aspectRatioClassname = { aspectRatioClass(aspectRatio) }
         hlsSource = { videoSpec.hls }
         mpegDashSource = { videoSpec.dash }

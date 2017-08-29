@@ -83,6 +83,8 @@ export default class PostModel extends RedditModel {
     thirdPartyTrackers: T.string,
     userReports: T.array,
     videoPlaytime: T.number,
+    videoTotalPlaytime: T.number,
+    videoTimerHandler: T.number,
 
     // derived
     crosspostIds: T.nop,

@@ -3,7 +3,7 @@ import dashjs from 'dashjs';
 import { debounce } from 'lodash';
 import './styles.less';
 import PostModel from 'apiClient/models/PostModel';
-import { trackVideoEvent } from 'app/actions/posts';
+import { trackVideoEvent, updatePostPlaytime } from 'app/actions/posts';
 import { connect } from 'react-redux';
 import { VIDEO_EVENT } from 'app/constants';
 import { createSelector } from 'reselect';
@@ -20,7 +20,6 @@ class HTML5StreamPlayer extends React.Component {
     mpegDashSource: T.string.isRequired,
     aspectRatioClassname: T.string.isRequired,
     postData: T.instanceOf(PostModel),
-    onUpdatePostPlaytime: T.func.isRequired,
     scrubberThumbSource: T.string.isRequired,
     isGif: T.bool.isRequired,
     isVertical: T.bool.isRequired,
@@ -45,6 +44,7 @@ class HTML5StreamPlayer extends React.Component {
       autoPlay: true,
       lastUpdate: null,
       totalServedTime: 0,
+      pageServedTime: 0,
       isLoading: false,
       controlsHidden: true,
       wasPlaying: null,
@@ -149,13 +149,14 @@ class HTML5StreamPlayer extends React.Component {
       }
     }
 
-    if (this.state.videoWasInView !== videoIsInView
-      && videoIsInView === true
-      && this.videoIsPaused() === true
-      && this.state.videoScrollPaused === false) {
-      video.play();
-      if (this.state.videoWasInView !== null) {
-        this.sendTrackVideoEvent(VIDEO_EVENT.SCROLL_AUTOPLAY);
+    if (this.state.videoWasInView !== videoIsInView) {
+      if (videoIsInView === true
+        && this.videoIsPaused() === true
+        && this.state.videoScrollPaused === false) {
+        video.play();
+        if (this.state.videoWasInView !== null) {
+          this.sendTrackVideoEvent(VIDEO_EVENT.SCROLL_AUTOPLAY);
+        }
       }
     }
 
@@ -197,7 +198,7 @@ class HTML5StreamPlayer extends React.Component {
           totalServedTime: this.props.postData.videoPlaytime * 1000.0,
           videoWasInView: null,
         });
-        this.sendTrackVideoEvent(VIDEO_EVENT.CHANGED_PAGETYPE, this.getPercentServed());
+        // this.sendTrackVideoEvent(VIDEO_EVENT.CHANGED_PAGETYPE, this.getPercentServed(true));
         video.currentTime = this.safeVideoTime(this.props.postData.videoPlaytime);
       } else {
         this.setState({
@@ -219,8 +220,6 @@ class HTML5StreamPlayer extends React.Component {
     (dash.js handles this check automatically).*/
     const video = this.HTML5StreamPlayerVideo;
     const seekThumb = this.seekThumb;
-    
-
     // Add an event handler for seek events
     if (seekThumb) {
       //Passive event listeners only available on modern browsers - increases scroll performance
@@ -276,9 +275,19 @@ class HTML5StreamPlayer extends React.Component {
 
     const debounceFunc = debounce(this.isScrolledIntoView, 50);
     window.addEventListener('scroll', debounceFunc);
+    window.addEventListener('beforeunload', this.pageExited, false);
 
     //store function handler for removal
-    this.setState({debounceFunc, mediaPlayer: null});
+    this.setState({debounceFunc, mediaPlayer: null, totalServedTime: this.props.postData.videoTotalPlaytime});
+  }
+
+  pageExited = () => {
+    //Fired when the browser quits or closes the current tab
+    if (this.state.videoWasInView === true) {
+      //Clear handler just in case it is present - we will be sending the event manually
+      clearTimeout(this.props.postData.videoTimerHandler);
+      this.sendTrackVideoEvent(VIDEO_EVENT.SERVED_VIDEO, this.getPercentServed(false));
+    }
   }
 
   componentWillMount() {
@@ -299,7 +308,7 @@ class HTML5StreamPlayer extends React.Component {
   componentWillUnmount() {
     if (this.state.totalServedTime > 0) {
       //Video has been watched and we are now removing it.
-      this.sendTrackVideoEvent(VIDEO_EVENT.SERVED_VIDEO, this.getPercentServed());
+      this.sendTrackVideoEvent(VIDEO_EVENT.CHANGED_PAGETYPE, this.getPercentServed(true));
     }
     const video = this.HTML5StreamPlayerVideo;
     const seekThumb = this.seekThumb;
@@ -311,6 +320,7 @@ class HTML5StreamPlayer extends React.Component {
     video.removeEventListener('ended', this.updateTime, false);
     video.removeEventListener('webkitendfullscreen', this.onVideoEndsFullScreen, false);
     window.removeEventListener('scroll', this.state.debounceFunc, false);
+    window.removeEventListener('beforeunload', this.pageExited, false);
 
     // Add an event handler for seek events
     if (seekThumb) {
@@ -326,10 +336,10 @@ class HTML5StreamPlayer extends React.Component {
     video.removeEventListener('MSFullscreenChange', this.exitHandler, false);
   }
 
-  componentDidUpdate(prevProps, prevState) {
-    if (prevState.videoFullScreen !== this.state.videoFullScreen) {
+  componentWillUpdate(nextProps, nextState) {
+    if (nextState.videoFullScreen !== this.state.videoFullScreen) {
       //Entered or exited fullscreen, send page type event
-      this.sendTrackVideoEvent(VIDEO_EVENT.CHANGED_PAGETYPE, this.getPercentServed());
+      this.sendTrackVideoEvent(VIDEO_EVENT.CHANGED_PAGETYPE, this.getPercentServed(true));
     }
   }
 
@@ -655,14 +665,18 @@ class HTML5StreamPlayer extends React.Component {
     this.drawBufferBar(video);
 
     if (this.state.currentlyScrubbing === true || this.videoLoadedSuccessfully === false) {
+      this.setState({ lastUpdate: performance.now() });
       return;
     }
 
     let newTime = this.state.totalServedTime;
+    let pageServedNewTime = this.state.pageServedTime;
     if ((this.state.lastUpdate !== null)
       && (this.videoIsPaused() === false)
       && (this.state.wasPlaying === true)) {
-      newTime += performance.now() - this.state.lastUpdate;
+      const updateTimeLength = performance.now() - this.state.lastUpdate;
+      newTime += updateTimeLength;
+      pageServedNewTime += updateTimeLength;
     }
 
     if (video.ended && this.state.controlsHidden === true) {
@@ -677,9 +691,22 @@ class HTML5StreamPlayer extends React.Component {
         currentTime: this.secondsToMinutes(this.safeVideoTime(video.currentTime)),
         lastUpdate: performance.now(),
         totalServedTime: newTime,
+        pageServedTime: pageServedNewTime,
         wasPlaying: !this.videoIsPaused(),
       });
-      this.props.onUpdatePostPlaytime(video.currentTime);
+      const payload = {
+        ...this.buildBaseEventData(),
+        ...this.getPercentServed(false),
+      };
+      this.props.dispatch(
+        updatePostPlaytime(
+          this.props.postData.uuid,
+          video.currentTime,
+          newTime,
+          this.props.postData.videoTimerHandler,
+          payload
+        )
+      );
     }
   }
 
@@ -994,20 +1021,15 @@ class HTML5StreamPlayer extends React.Component {
     this.props.dispatch(trackVideoEvent(eventType,payload));
   }
 
-  getPercentServed() {
+  getPercentServed(isChangedPagetype) {
     const video = this.HTML5StreamPlayerVideo;
     let pctServed = 0;
+    let servedTime = isChangedPagetype ? this.state.pageServedTime : this.state.totalServedTime;
     if (video) {
-      let servedTime = this.state.totalServedTime;
-
-      //If we have no served time, video has just loaded (page change etc.) take currentTime as backup.
-      if (servedTime === 0) {
-        servedTime = video.currentTime;
-      }
       pctServed = servedTime / parseInt(video.duration * 1000);
     }
     const payload = {
-      max_timestamp_served: parseInt(this.state.totalServedTime),
+      max_timestamp_served: parseInt(servedTime),
       percent_served: pctServed,
     };
 

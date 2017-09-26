@@ -144,6 +144,7 @@ class HTML5StreamPlayer extends React.Component {
         && this.state.isLoading === false
         && this.state.videoLoaded === false) {
         player = dashjs.MediaPlayerFactory.create(video);
+        player.getDebug().setLogToBrowserConsole(false);
         video.load();
         isLoading = true;
       }

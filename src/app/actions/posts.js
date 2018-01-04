@@ -81,7 +81,7 @@ export const toggleSavePost = postId => async (dispatch, getState) => {
     await SavedEndpoint[method](apiOptions, { id: post.uuid });
     // the response doesn't actually give us anything back, so we'll just emit
     // a new model on the frontend if the call succeeeds.
-    const newPost = PostModel.fromJSON({ ...post.toJSON(), saved: !post.saved });
+    const newPost = PostModel.set({ saved: !post.saved });
     dispatch(toggleSavedReceived(newPost));
   } catch (e) {
     // TODO: handle these errors in the toaster

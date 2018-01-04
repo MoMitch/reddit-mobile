@@ -339,10 +339,13 @@ function renderImage(previewImage, imageURL, linkDescriptor, onClick,
 
   let aspectRatio;
   if (post.media && post.media.reddit_video) {
-    aspectRatio = getVideoAspectRatio(single, post.media.reddit_video.width, post.media.reddit_video.height);
+    aspectRatio = getVideoAspectRatio(single,
+                                      post.media.reddit_video.width,
+                                      post.media.reddit_video.height);
   } else {
-    aspectRatio = getAspectRatio(single, previewImage.width,
-                                     previewImage.height);
+    aspectRatio = getAspectRatio(single,
+                                previewImage.width,
+                                previewImage.height);
   }
 
   if (previewImage && previewImage.url && !aspectRatio) {

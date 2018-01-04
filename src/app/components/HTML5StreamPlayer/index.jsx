@@ -12,6 +12,7 @@ import { isCommentsPage } from 'platform/pageUtils';
 const T = React.PropTypes;
 const vector_path_play_icon = 'M6,3 L21,10.5 21,25.5 6,33 6,3 M21,10.5 L36,18 36,18 21,25.5 21,10.5';
 const vector_path_pause_icon = 'M3,3 L15,3 15,33 3,33 3,3 M19,3 L31,3 31,33 19,33 19,3';
+const kToggleControlTimer = 2500; //The time before controls fade in ms
 
 class HTML5StreamPlayer extends React.Component {
   static propTypes = {
@@ -89,11 +90,11 @@ class HTML5StreamPlayer extends React.Component {
 
   startToggleControlsTimer() {
     clearTimeout(this.state.controlTimeout);
-    const controlTimeout = window.setTimeout(() => {
+    const controlTimeout = setTimeout(() => {
       if (this.state.controlsHidden === false && this.props.isGif === false) {
         this.toggleControls();
       }
-    }, 2500);
+    }, kToggleControlTimer);
     this.setState({controlTimeout});
   }
 
@@ -151,9 +152,9 @@ class HTML5StreamPlayer extends React.Component {
     }
 
     if (this.state.videoWasInView !== videoIsInView) {
-      if (videoIsInView === true
-        && this.videoIsPaused() === true
-        && this.state.videoScrollPaused === false) {
+      if (videoIsInView
+        && this.videoIsPaused()
+        && !this.state.videoScrollPaused) {
         video.play();
         if (this.state.videoWasInView !== null) {
           this.sendTrackVideoEvent(VIDEO_EVENT.SCROLL_AUTOPLAY);
@@ -161,9 +162,9 @@ class HTML5StreamPlayer extends React.Component {
       }
     }
 
-    if (this.videoIsPaused() === false && videoIsInView === false) {
+    if (!this.videoIsPaused() && videoIsInView === false) {
       video.pause();
-      if (this.state.videoWasInView === true) {
+      if (this.state.videoWasInView) {
         this.sendTrackVideoEvent(VIDEO_EVENT.SCROLL_PAUSE);
       }
     }
@@ -199,7 +200,6 @@ class HTML5StreamPlayer extends React.Component {
           totalServedTime: this.props.postData.videoPlaytime * 1000.0,
           videoWasInView: null,
         });
-        // this.sendTrackVideoEvent(VIDEO_EVENT.CHANGED_PAGETYPE, this.getPercentServed(true));
         video.currentTime = this.safeVideoTime(this.props.postData.videoPlaytime);
       } else {
         this.setState({
@@ -409,7 +409,7 @@ class HTML5StreamPlayer extends React.Component {
       this.setState({videoFullScreen: true});
     }
 
-    if (this.state.wasPlaying === true || this.props.isGif === true) {
+    if (this.state.wasPlaying || this.props.isGif) {
       const video = this.HTML5StreamPlayerVideo;
       video.play();
     }
@@ -475,7 +475,7 @@ class HTML5StreamPlayer extends React.Component {
 
   enterFullScreen = () => {
     //If controls are hidden, return and let toggle controls take event
-    if (this.state.controlsHidden === true && this.props.isGif === false) {
+    if (this.state.controlsHidden && this.props.isGif === false) {
       this.toggleControls();
       return;
     }
@@ -508,7 +508,7 @@ class HTML5StreamPlayer extends React.Component {
   }
 
   muteVideo = () => {
-    if (this.state.controlsHidden === true) {
+    if (this.state.controlsHidden) {
       this.toggleControls();
       return;
     }
@@ -566,10 +566,10 @@ class HTML5StreamPlayer extends React.Component {
     if (this.state.wasPlaying === null) {
       play_pause_vector_to = vector_path_pause_icon;
       play_pause_vector_from = vector_path_pause_icon;
-    } else if (this.state.wasPlaying === false) {
+    } else if (!this.state.wasPlaying) {
       play_pause_vector_to = vector_path_play_icon;
       play_pause_vector_from = vector_path_pause_icon;
-    } else if (this.props.isGif === false) {
+    } else if (!this.props.isGif) {
       play_pause_vector_to = vector_path_pause_icon;
       play_pause_vector_from = vector_path_play_icon;
     } else {
@@ -665,7 +665,7 @@ class HTML5StreamPlayer extends React.Component {
     const video = this.HTML5StreamPlayerVideo;
     this.drawBufferBar(video);
 
-    if (this.state.currentlyScrubbing === true || this.videoLoadedSuccessfully === false) {
+    if (this.state.currentlyScrubbing || video.error !== null) {
       this.setState({ lastUpdate: performance.now() });
       return;
     }
@@ -680,8 +680,8 @@ class HTML5StreamPlayer extends React.Component {
       pageServedNewTime += updateTimeLength;
     }
 
-    if (video.ended && this.state.controlsHidden === true) {
-      if (this.state.controlsHidden === true) {
+    if (video.ended && this.state.controlsHidden) {
+      if (this.state.controlsHidden) {
         this.toggleControls();
       }
       clearTimeout(this.state.controlTimeout);
